@@ -8,6 +8,7 @@ import { publishApi } from '../../services/versionService'
 const RightSidebar = () => {
     const dispatch = useDispatch()
 
+    const { user } = useSelector((state) => state.auth)
     const { nodes, edges, selectedNode, selectedEdge } = useSelector((state) => state.flow)
 
     const currentNode = nodes.find(n => n.id === selectedNode)
@@ -62,6 +63,7 @@ const RightSidebar = () => {
                 <div className={styles.container}>
                     <div className={styles.empty}>
                         Select a node or connection to edit
+                        {console.log(user)}
                     </div>
                 </div>
             </div>
@@ -181,10 +183,12 @@ const RightSidebar = () => {
                     </div>
                 </div>
 
-                <button className={styles.publishBtn} onClick={handlePublish}>
-                    <Save size={18} />
-                    Publish & Sync
-                </button>
+                {user.role === 'admin' && (
+                    <button className={styles.publishBtn} onClick={handlePublish}>
+                        <Save size={18} />
+                        Publish & Sync
+                    </button>
+                )}
             </div>
         </div>
     )

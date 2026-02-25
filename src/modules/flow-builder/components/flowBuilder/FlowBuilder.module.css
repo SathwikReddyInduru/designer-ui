@@ -80,12 +80,20 @@
     align-items: center;
     gap: 6px;
     padding: 8px 12px;
+    font-size: 16px;
+    transition: background 0.2s ease;
+}
+
+.dropdownItem1 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
     cursor: pointer;
     font-size: 16px;
     transition: background 0.2s ease;
-
 }
 
-.dropdownItem:hover {
+.dropdownItem1:hover {
     background: #f1f5f9;
 }

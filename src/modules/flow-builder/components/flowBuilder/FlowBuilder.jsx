@@ -4,13 +4,14 @@ import LeftSidebar from '../leftSidebar/LeftSidebar'
 import RightSidebar from '../rightSidebar/RightSidebar'
 import logo from '@/assets/xiusLogo.png';
 import styles from './FlowBuilder.module.css'
-import { LogOut, Logs, User, User2, UserCheck, UserCircle } from 'lucide-react';
+import { LogOut, UserCircle, UserIcon } from 'lucide-react';
 import { logout } from '../../../auth/store/authSlice';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 const FlowBuilder = () => {
 
     const dispatch = useDispatch()
+    const { user } = useSelector((state) => state.auth)
     const [leftOpen, setLeftOpen] = useState(true)
     const [rightOpen, setRightOpen] = useState(true)
     const [menuOpen, setMenuOpen] = useState(false)
@@ -40,14 +41,16 @@ const FlowBuilder = () => {
                         className={styles.iconButton}
                         onClick={() => setMenuOpen(prev => !prev)}
                     >
-                        {/* <Logs size={25} /> */}
                         <UserCircle size={24} />
                     </button>
 
                     {menuOpen && (
                         <div className={styles.dropdown}>
+                            <div className={styles.dropdownItem}>
+                                <UserIcon size={17} /> {user?.name || 'User'}
+                            </div>
                             <div
-                                className={styles.dropdownItem}
+                                className={styles.dropdownItem1}
                                 onClick={() => {
                                     dispatch(logout())
                                     setMenuOpen(false)
@@ -68,6 +71,7 @@ const FlowBuilder = () => {
                     rightOpen={rightOpen}
                     toggleLeft={() => setLeftOpen(prev => !prev)}
                     toggleRight={() => setRightOpen(prev => !prev)}
+                    closeMenu={() => setMenuOpen(false)}
                 />
                 <div style={{ width: rightOpen ? '400px' : '0px', transition: 'width 0.3s ease', borderLeft: '1px solid rgb(226, 232, 240)' }}>
                     <RightSidebar />

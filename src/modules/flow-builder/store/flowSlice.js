@@ -32,7 +32,7 @@ const flowSlice = createSlice({
                 const spacing = 70
 
                 newNode.position = {
-                    x: 200 + state.nodes.length * spacing,
+                    x: 300 + state.nodes.length * spacing,
                     y: 100 + state.nodes.length * spacing
                 }
                 state.nodes.push(newNode)

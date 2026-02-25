@@ -38,9 +38,20 @@ const Login = () => {
             const tempUser = 'user';
             const tempPass = 'user';
 
+            const adminUser = 'admin';
+            const adminPass = 'admin';
+
             if (formData.username === tempUser && formData.password === tempPass) {
                 dispatch(login({
                     id: 1,
+                    name: formData.username,
+                    role: "user"
+                }));
+                navigate('/flowBuilder');
+            }
+            else if (formData.username === adminUser && formData.password === adminPass) {
+                dispatch(login({
+                    id: 2,
                     name: formData.username,
                     role: "admin"
                 }));

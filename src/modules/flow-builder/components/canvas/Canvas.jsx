@@ -21,7 +21,7 @@ import {
 } from '../../store/flowSlice'
 import styles from './Canvas.module.css'
 
-const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen }) => {
+const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen, closeMenu }) => {
     const dispatch = useDispatch()
     const nodes = useSelector((state) => state.flow.nodes)
     const edges = useSelector((state) => state.flow.edges)
@@ -120,7 +120,7 @@ const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen }) => {
     }, [dispatch, hasSelection])
 
     return (
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative' }} onClick={() => closeMenu()}>
             <button
                 onClick={toggleLeft}
                 className={styles.toggleStyleButton}
