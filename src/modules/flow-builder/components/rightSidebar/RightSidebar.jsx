@@ -65,7 +65,6 @@ const RightSidebar = () => {
                 <div className={styles.container}>
                     <div className={styles.empty}>
                         Select a node or connection to edit
-                        {console.log(user)}
                     </div>
                 </div>
             </div>
@@ -202,11 +201,7 @@ const RightSidebar = () => {
                             className={styles.modalContent}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <MobileSimulator
-                                nodes={nodes}
-                                edges={edges}
-                                onClose={() => setTestOpen(false)}
-                            />
+                            <MobileSimulator onClose={() => setTestOpen(false)} />
                         </div>
                     </div>
                 )}

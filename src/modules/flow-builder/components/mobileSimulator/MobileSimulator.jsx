@@ -1,23 +1,16 @@
-// ============================================
-// FILE: MobileSimulator.jsx (Backend API Version)
-// ============================================
-
 import { X } from 'lucide-react'
 import { useState } from 'react'
-import axios from 'axios'
 import styles from './MobileSimulator.module.css'
+import { simulateUssdApi } from "../../services/versionService"
 
-const MobileSimulator = ({ nodes, edges, onClose }) => {
+const MobileSimulator = ({ onClose }) => {
     const [view, setView] = useState("dialer")
     const [screenText, setScreenText] = useState("")
     const [userInput, setUserInput] = useState("")
-    const [msisdn, setMsisdn] = useState("254712345678")
+    const [msisdn, setMsisdn] = useState("1234567890")
     const [isSessionActive, setIsSessionActive] = useState(false)
     const [pageId, setPageId] = useState(0)
     const [isLoading, setIsLoading] = useState(false)
-
-    // Backend API URL
-    const API_URL = "http://10.10.19.188:6215/api/simulate-ussd"
 
     const handleDial = () => {
         if (msisdn.length < 10) {
@@ -30,73 +23,64 @@ const MobileSimulator = ({ nodes, edges, onClose }) => {
     }
 
     const handleSend = async () => {
-        if (!userInput.trim()) return
+        if (!userInput.trim() && !isSessionActive) return;
 
-        setIsLoading(true)
+        setIsLoading(true);
 
         try {
-            // Prepare request payload for Python backend
-            const payload = {
-                MSISDN: msisdn,
-                PageId: pageId,
-                UserInputOption: userInput,
-                UserInputText: null
+            let payload;
+
+            // 🔥 SESSION NOT STARTED
+            if (!isSessionActive) {
+                payload = {
+                    MSISDN: msisdn,
+                    PageId: 0,
+                    UserInputOption: "",
+                    UserInputText: ""
+                };
             }
 
-            console.log("Sending to backend:", payload)
-
-            // Call Python backend API
-            const response = await axios.post(API_URL, payload)
-
-            console.log("Backend response:", response.data)
-
-            // Check if backend returned success
-            if (response.data.status === "ERROR") {
-                setScreenText(`Error: ${response.data.message}`)
-                setUserInput("")
-                setIsLoading(false)
-                return
+            // 🔥 SESSION ACTIVE
+            else {
+                payload = {
+                    MSISDN: msisdn,
+                    PageId: pageId,
+                    UserInputOption: userInput.trim(),
+                    UserInputText: ""
+                };
             }
 
-            const ussdResponse = response.data.ussd_response
+            console.log("Sending:", payload);
 
-            // Display the response text
-            setScreenText(ussdResponse.UserOutputText)
+            const response = await simulateUssdApi(payload);
 
-            // Update PageId for next request
-            setPageId(ussdResponse.PageId)
+            console.log("Backend response:", response.data);
 
-            // Check if session should terminate
+            const ussdResponse = response.data.ussd_response;
+
+            setScreenText(ussdResponse.UserOutputText);
+            setPageId(ussdResponse.PageId);
+
+            // 🔥 Activate session after first successful call
+            setIsSessionActive(true);
+
             if (ussdResponse.TerminateFlag === "Y") {
-                setIsSessionActive(false)
+                setIsSessionActive(false);
                 setTimeout(() => {
-                    setView("dialer")
-                    setScreenText("")
-                    setUserInput("")
-                    setPageId(0)
-                }, 3000) // Auto-close after 3 seconds
-            } else {
-                setIsSessionActive(true)
+                    handleEndCall();
+                }, 3000);
             }
 
-            setUserInput("")
+            setUserInput("");
 
         } catch (error) {
-            console.error('API Error:', error)
-
-            if (error.response) {
-                setScreenText(`Error: ${error.response.data.message || 'Backend error'}`)
-            } else if (error.request) {
-                setScreenText("Network Error\nCheck if USSD Engine is running")
-            } else {
-                setScreenText("Error sending request")
-            }
-
-            setUserInput("")
+            console.error(error);
+            setScreenText("Network Error");
+            setUserInput("");
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const handleEndCall = () => {
         setIsSessionActive(false)
@@ -125,14 +109,14 @@ const MobileSimulator = ({ nodes, edges, onClose }) => {
                     {view === "dialer" ? (
                         <div className={styles.dialerContainer}>
                             <div className={styles.statusBar}>
-                                <span>VB Network</span>
+                                <span>Network</span>
                             </div>
                             <h2 className={styles.heading}>Enter Mobile No.</h2>
                             <input
                                 className={styles.dialInput}
                                 value={msisdn}
                                 onChange={(e) => setMsisdn(e.target.value)}
-                                placeholder="254712345678"
+                                placeholder="1234567890"
                             />
                             <div className={styles.keypad}>
                                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, "*", 0, "#"].map(key => (
@@ -162,7 +146,8 @@ const MobileSimulator = ({ nodes, edges, onClose }) => {
 
                             <div className={styles.ussdContent}>
                                 {isLoading ? (
-                                    <div style={{ textAlign: 'center', padding: '20px' }}>
+                                    <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
+                                        <div style={{ marginBottom: '10px' }}>⏳</div>
                                         Loading...
                                     </div>
                                 ) : (
@@ -177,7 +162,11 @@ const MobileSimulator = ({ nodes, edges, onClose }) => {
                                     className={styles.input}
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}
-                                    placeholder={isSessionActive ? "Enter option..." : "Dial *123#"}
+                                    placeholder={
+                                        !isSessionActive
+                                            ? "Dail Shortcode to start"
+                                            : "Enter option..."
+                                    }
                                     onKeyDown={handleKeyPress}
                                     autoFocus
                                     disabled={isLoading}

@@ -37,3 +37,8 @@ export const publishApi = async (nodes, edges) => {
         data: formattedData
     });
 };
+
+// Simulate USSD (Tests Published Flow)
+export const simulateUssdApi = async (payload) => {
+    return api.post("/simulate-ussd", payload);
+};
