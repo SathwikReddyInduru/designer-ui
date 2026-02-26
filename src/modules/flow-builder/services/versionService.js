@@ -2,7 +2,7 @@ import axios from "axios";
 import { formatForBackend, formatForFrontend } from "../utils/formatConverter";
 
 const api = axios.create({
-    baseURL: "http://10.10.19.188:6215/api",
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     headers: { "Content-Type": "application/json" },
 });
 

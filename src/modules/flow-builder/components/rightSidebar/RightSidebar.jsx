@@ -1,7 +1,7 @@
-import { Power, PowerOff, Smartphone } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
 import { saveToHistory, setEdges, updateNodeData } from '../../store/flowSlice'
+import { Power, PowerOff, Smartphone } from 'lucide-react'
+import { useDispatch, useSelector } from 'react-redux'
+import { useEffect, useState } from 'react'
 import styles from './RightSidebar.module.css'
 
 const RightSidebar = () => {
@@ -87,7 +87,6 @@ const RightSidebar = () => {
     const data = currentNode.data || {}
 
     const updateField = (key, value) => {
-        // ✅ Prevent admin from editing
         if (isAdmin) return
 
         dispatch(updateNodeData({
@@ -97,7 +96,6 @@ const RightSidebar = () => {
     }
 
     const handleBlur = () => {
-        // ✅ Prevent admin from saving changes
         if (isAdmin) return
         dispatch(saveToHistory())
     }
@@ -119,21 +117,20 @@ const RightSidebar = () => {
                             onChange={(e) => updateField('label', e.target.value)}
                             onBlur={handleBlur}
                             placeholder="*123# or custom code"
-                            disabled={isAdmin} // ✅ Disable for admin
-                            readOnly={isAdmin} // ✅ Read-only for admin
+                            disabled={isAdmin}
+                            readOnly={isAdmin}
                         />
                     </div>
                 )}
 
                 <button
                     onClick={() => {
-                        // ✅ Prevent admin from toggling
                         if (isAdmin) return
                         updateField('enabled', !data.enabled)
                         dispatch(saveToHistory())
                     }}
                     className={`${styles.statusBtn} ${data.enabled ? styles.active : styles.offline}`}
-                    disabled={isAdmin} // ✅ Disable for admin
+                    disabled={isAdmin}
                 >
                     {data.enabled ? <Power size={16} /> : <PowerOff size={16} />}
                     {data.enabled ? 'ACTIVE' : 'OFFLINE'}
@@ -148,13 +145,12 @@ const RightSidebar = () => {
                             </span>
                             <button
                                 onClick={() => {
-                                    // ✅ Prevent admin from toggling
                                     if (isAdmin) return
                                     updateField('isDynamicPlanNode', !data.isDynamicPlanNode)
                                     dispatch(saveToHistory())
                                 }}
                                 className={`${styles.toggleBtn} ${data.isDynamicPlanNode ? styles.toggleOn : styles.toggleOff}`}
-                                disabled={isAdmin} // ✅ Disable for admin
+                                disabled={isAdmin}
                             >
                                 {data.isDynamicPlanNode ? 'ON' : 'OFF'}
                             </button>
@@ -171,8 +167,8 @@ const RightSidebar = () => {
                         onBlur={handleBlur}
                         placeholder="Welcome message or instructions..."
                         rows={4}
-                        disabled={isAdmin} // ✅ Disable for admin
-                        readOnly={isAdmin} // ✅ Read-only for admin
+                        disabled={isAdmin}
+                        readOnly={isAdmin}
                     />
                 </div>
 
@@ -185,8 +181,8 @@ const RightSidebar = () => {
                             onChange={(e) => updateField('apiUrl', e.target.value)}
                             onBlur={handleBlur}
                             placeholder="https://api.example.com/plans"
-                            disabled={isAdmin} // ✅ Disable for admin
-                            readOnly={isAdmin} // ✅ Read-only for admin
+                            disabled={isAdmin}
+                            readOnly={isAdmin}
                         />
                     </div>
                 )}
@@ -201,9 +197,6 @@ const RightSidebar = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* ✅ Admin cannot see any action buttons in RightSidebar */}
-                {/* All admin actions (Publish, Sync) are in LeftSidebar */}
             </div>
         </div>
     )
