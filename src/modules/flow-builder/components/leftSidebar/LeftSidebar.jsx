@@ -5,8 +5,10 @@ import { publishApi } from '../../services/versionService'
 import { useDispatch, useSelector } from 'react-redux'
 import { useState } from 'react'
 import styles from './LeftSidebar.module.css'
+import { useReactFlow } from 'reactflow'
 
 const LeftSidebar = () => {
+    const reactFlowInstance = useReactFlow()
     const [showModal, setShowModal] = useState(false)
     const [versions, setVersions] = useState([])
 
@@ -51,6 +53,13 @@ const LeftSidebar = () => {
 
             dispatch(loadFlowState(formatted))
             setShowModal(false)
+
+            setTimeout(() => {
+                reactFlowInstance.fitView({
+                    padding: 0.1,
+                    duration: 800
+                })
+            }, 100)
 
         } catch (error) {
             console.error(error)

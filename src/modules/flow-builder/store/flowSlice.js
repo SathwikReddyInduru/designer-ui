@@ -29,12 +29,12 @@ const flowSlice = createSlice({
             reducer: (state, action) => {
                 saveHistory(state)
                 const newNode = action.payload
-                const spacing = 70
 
                 newNode.position = {
-                    x: 300 + state.nodes.length * spacing,
-                    y: 100 + state.nodes.length * spacing
+                    x: Math.random() * 300,
+                    y: Math.random() * 300
                 }
+
                 state.nodes.push(newNode)
             },
             prepare: (type) => {

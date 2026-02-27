@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import authReducer from '../modules/auth/store/authSlice'
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
+// import sessionStorage from 'redux-persist/lib/storage/session' // sessionStorage
 import { combineReducers } from 'redux'
 import flowReducer from '../modules/flow-builder/store/flowSlice'
 
@@ -12,7 +13,7 @@ const appReducer = combineReducers({
 
 const persistConfig = {
     key: 'root',
-    storage,
+    storage: storage,
     whitelist: ['auth']
 }
 

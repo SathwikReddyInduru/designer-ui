@@ -7,6 +7,7 @@ import styles from './FlowBuilder.module.css'
 import { LogOut, UserCircle, UserIcon } from 'lucide-react';
 import { logout } from '../../../auth/store/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { ReactFlowProvider } from 'reactflow';
 
 const FlowBuilder = () => {
 
@@ -32,52 +33,54 @@ const FlowBuilder = () => {
     }, [])
 
     return (
-        <div className={styles.flowBuilder}>
-            <nav className={styles.loginNavbar}>
-                <img src={logo} alt="Xius Logo" />
+        <ReactFlowProvider>
+            <div className={styles.flowBuilder}>
+                <nav className={styles.loginNavbar}>
+                    <img src={logo} alt="Xius Logo" />
 
-                <div className={styles.menuWrapper} ref={menuRef}>
-                    <button
-                        className={styles.iconButton}
-                        onClick={() => setMenuOpen(prev => !prev)}
-                    >
-                        <UserCircle size={24} />
-                    </button>
+                    <div className={styles.menuWrapper} ref={menuRef}>
+                        <button
+                            className={styles.iconButton}
+                            onClick={() => setMenuOpen(prev => !prev)}
+                        >
+                            <UserCircle size={24} />
+                        </button>
 
-                    {menuOpen && (
-                        <div className={styles.dropdown}>
-                            <div className={styles.dropdownItem}>
-                                <UserIcon size={17} /> {user?.name || 'User'}
+                        {menuOpen && (
+                            <div className={styles.dropdown}>
+                                <div className={styles.dropdownItem}>
+                                    <UserIcon size={17} /> {user?.name || 'User'}
+                                </div>
+                                <div
+                                    className={styles.dropdownItem1}
+                                    onClick={() => {
+                                        dispatch(logout())
+                                        setMenuOpen(false)
+                                    }}
+                                >
+                                    <LogOut size={16} fill='red' /> Logout
+                                </div>
                             </div>
-                            <div
-                                className={styles.dropdownItem1}
-                                onClick={() => {
-                                    dispatch(logout())
-                                    setMenuOpen(false)
-                                }}
-                            >
-                                <LogOut size={16} fill='red' /> Logout
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </nav>
-            <div className={styles.content}>
-                <div style={{ width: leftOpen ? '290px' : '0px', transition: 'width 0.3s ease', overflow: 'hidden' }}>
-                    <LeftSidebar />
-                </div>
-                <Canvas
-                    leftOpen={leftOpen}
-                    rightOpen={rightOpen}
-                    toggleLeft={() => setLeftOpen(prev => !prev)}
-                    toggleRight={() => setRightOpen(prev => !prev)}
-                    closeMenu={() => setMenuOpen(false)}
-                />
-                <div style={{ width: rightOpen ? '400px' : '0px', transition: 'width 0.3s ease', borderLeft: '1px solid rgb(226, 232, 240)' }}>
-                    <RightSidebar />
+                        )}
+                    </div>
+                </nav>
+                <div className={styles.content}>
+                    <div style={{ width: leftOpen ? '290px' : '0px', transition: 'width 0.3s ease', overflow: 'hidden' }}>
+                        <LeftSidebar />
+                    </div>
+                    <Canvas
+                        leftOpen={leftOpen}
+                        rightOpen={rightOpen}
+                        toggleLeft={() => setLeftOpen(prev => !prev)}
+                        toggleRight={() => setRightOpen(prev => !prev)}
+                        closeMenu={() => setMenuOpen(false)}
+                    />
+                    <div style={{ width: rightOpen ? '400px' : '0px', transition: 'width 0.3s ease', borderLeft: '1px solid rgb(226, 232, 240)' }}>
+                        <RightSidebar />
+                    </div>
                 </div>
             </div>
-        </div>
+        </ReactFlowProvider>
     )
 }
 
