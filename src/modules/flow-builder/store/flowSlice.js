@@ -28,37 +28,33 @@ const flowSlice = createSlice({
         addNode: {
             reducer: (state, action) => {
                 saveHistory(state)
-                const newNode = action.payload
 
-                newNode.position = {
-                    x: Math.random() * 300,
-                    y: Math.random() * 300
-                }
-
-                state.nodes.push(newNode)
+                const { node } = action.payload
+                state.nodes.push(node)
             },
-            prepare: (type) => {
+
+            prepare: ({ type, position }) => {
                 const id = `node_${Math.random().toString(36).substr(2, 5)}`
 
                 const isAPI = type === 'api'
                 const isShortCode = type === 'shortcode'
 
                 const nodeTypes = {
-                    'shortcode': {
+                    shortcode: {
                         label: '*123#',
                         type: 'shortcode',
                         text: 'Welcome to USSD',
                         borderColor: '#3dd68c',
                         bgColor: '#f0fdf4'
                     },
-                    'api': {
+                    api: {
                         label: 'API Node',
                         type: 'api',
                         text: 'Dynamic Plans:',
                         borderColor: '#a855f7',
                         bgColor: '#faf5ff'
                     },
-                    'submenu': {
+                    submenu: {
                         label: 'Sub-Menu',
                         type: 'submenu',
                         text: 'New Menu Text...',
@@ -67,33 +63,37 @@ const flowSlice = createSlice({
                     }
                 }
 
-                const nodeData = nodeTypes[type] || nodeTypes['submenu']
+                const nodeData = nodeTypes[type] || nodeTypes.submenu
 
                 return {
                     payload: {
-                        id,
-                        data: {
-                            label: nodeData.label,
-                            text: nodeData.text,
-                            type: nodeData.type,
-                            enabled: true,
-                            isAPI: isAPI,
-                            isDynamicPlanNode: false,
-                            isShortCode: isShortCode,
-                            apiUrl: isAPI ? 'http://localhost:6215/api/billing/v1/available-plans' : '',
-                        },
-                        position: { x: 0, y: 0 },
-                        type: 'default',
-                        style: {
-                            background: nodeData.bgColor,
-                            border: `2px solid ${nodeData.borderColor}`,
-                            borderRadius: '12px',
-                            padding: '16px',
-                            fontSize: '16px',
-                            fontWeight: '500',
-                            minWidth: '180px',
-                            textAlign: 'center'
-                        },
+                        node: {
+                            id,
+                            type: 'default',
+                            position,
+                            data: {
+                                label: nodeData.label,
+                                text: nodeData.text,
+                                type: nodeData.type,
+                                enabled: true,
+                                isAPI,
+                                isDynamicPlanNode: false,
+                                isShortCode,
+                                apiUrl: isAPI
+                                    ? 'http://localhost:6215/api/billing/v1/available-plans'
+                                    : ''
+                            },
+                            style: {
+                                background: nodeData.bgColor,
+                                border: `2px solid ${nodeData.borderColor}`,
+                                borderRadius: '12px',
+                                padding: '16px',
+                                fontSize: '16px',
+                                fontWeight: '500',
+                                minWidth: '180px',
+                                textAlign: 'center'
+                            }
+                        }
                     }
                 }
             }

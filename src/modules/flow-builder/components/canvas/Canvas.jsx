@@ -57,7 +57,8 @@ const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen, closeMenu }) => 
             animated: true,
             label: nextLabel,
             style: {
-                strokeWidth: 1.2
+                strokeWidth: 1.4,
+                stroke: '#444444'
             },
             labelStyle: {
                 fontSize: 14,

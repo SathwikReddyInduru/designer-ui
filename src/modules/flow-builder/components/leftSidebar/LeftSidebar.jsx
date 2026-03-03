@@ -21,6 +21,70 @@ const LeftSidebar = () => {
     const canUndo = useSelector((state) => state.flow.history.length > 0)
     const canRedo = useSelector((state) => state.flow.future.length > 0)
 
+    const isOverlapping = (pos, nodes, width, height) => {
+        return nodes.some((node) => {
+            const nodeWidth = 200
+            const nodeHeight = 100
+
+            return !(
+                pos.x + width < node.position.x ||
+                pos.x > node.position.x + nodeWidth ||
+                pos.y + height < node.position.y ||
+                pos.y > node.position.y + nodeHeight
+            )
+        })
+    }
+
+    const handleAddNode = (type) => {
+        const {
+            getViewport,
+            getNodes,
+        } = reactFlowInstance
+
+        const viewport = getViewport()
+
+        const wrapper = document.querySelector('.react-flow')
+        const bounds = wrapper.getBoundingClientRect()
+
+        const padding = 40
+
+        // Convert visible screen area → flow coordinates
+        const minX = (-viewport.x) / viewport.zoom
+        const minY = (-viewport.y) / viewport.zoom
+
+        const maxX = minX + bounds.width / viewport.zoom
+        const maxY = minY + bounds.height / viewport.zoom
+
+        const nodes = getNodes()
+
+        const nodeWidth = 200
+        const nodeHeight = 100
+
+        let position
+        let tries = 0
+        const maxTries = 100
+
+        do {
+            position = {
+                x:
+                    minX +
+                    padding +
+                    Math.random() * (maxX - minX - nodeWidth - padding * 2),
+                y:
+                    minY +
+                    padding +
+                    Math.random() * (maxY - minY - nodeHeight - padding * 2),
+            }
+
+            tries++
+        } while (
+            isOverlapping(position, nodes, nodeWidth, nodeHeight) &&
+            tries < maxTries
+        )
+
+        dispatch(addNode({ type, position }))
+    }
+
     const handleSaveVersion = async () => {
         const versionName = window.prompt("Enter version name:")
         if (!versionName?.trim()) return
@@ -56,7 +120,7 @@ const LeftSidebar = () => {
 
             setTimeout(() => {
                 reactFlowInstance.fitView({
-                    padding: 0.1,
+                    padding: 0.2,
                     duration: 800
                 })
             }, 100)
@@ -121,19 +185,19 @@ const LeftSidebar = () => {
             )}
 
             <button
-                onClick={() => dispatch(addNode('shortcode'))}
+                onClick={() => handleAddNode('shortcode')}
                 disabled={user.role == 'admin'}>
                 <LayoutGrid size={16} /> New Short Code
             </button>
 
             <button
-                onClick={() => dispatch(addNode('submenu'))}
+                onClick={() => handleAddNode('submenu')}
                 disabled={user.role == 'admin'}>
                 <List size={16} /> Add Sub-Menu
             </button>
 
             <button
-                onClick={() => dispatch(addNode('api'))}
+                onClick={() => handleAddNode('api')}
                 disabled={user.role == 'admin'}>
                 <Database size={16} /> Add API Node
             </button>
