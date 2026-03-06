@@ -50,12 +50,7 @@ const MobileSimulator = ({ onClose }) => {
                 };
             }
 
-            console.log("Sending:", payload);
-
             const response = await simulateUssdApi(payload);
-
-            console.log("Backend response:", response.data);
-
             const ussdResponse = response.data.ussd_response;
 
             setScreenText(ussdResponse.UserOutputText);

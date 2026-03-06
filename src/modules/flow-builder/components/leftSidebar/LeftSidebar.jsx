@@ -48,7 +48,6 @@ const LeftSidebar = () => {
 
         const padding = 40
 
-        // Convert visible screen area → flow coordinates
         const minX = (-viewport.x) / viewport.zoom
         const minY = (-viewport.y) / viewport.zoom
 
@@ -134,7 +133,6 @@ const LeftSidebar = () => {
     const handleClearCanvas = () => {
         if (window.confirm('⚠️ Clear entire canvas? This action cannot be undone.')) {
             dispatch(clearCanvas())
-            // alert('✅ Canvas cleared')
         }
     }
 
@@ -142,7 +140,6 @@ const LeftSidebar = () => {
         try {
             const response = await publishApi(nodes, edges)
 
-            console.log("Publish response:", response.data.message)
             alert(response.data.message)
 
         } catch (error) {

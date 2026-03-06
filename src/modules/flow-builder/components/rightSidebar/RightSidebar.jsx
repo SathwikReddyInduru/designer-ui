@@ -184,18 +184,30 @@ const RightSidebar = () => {
                     />
                 </div>
 
-                {data.isAPI && (
+                {(data.isAPI || data.isShortCode) && (
                     <div className={styles.section}>
-                        <label className={styles.label}>API URL</label>
+                        <label className={styles.label}>
+                            API URL
+                            {data.isShortCode && <span className={styles.optional}> (Optional - for user data)</span>}
+                        </label>
                         <input
                             className={styles.input}
                             value={data.apiUrl || ''}
                             onChange={(e) => updateField('apiUrl', e.target.value)}
                             onBlur={handleBlur}
-                            placeholder="https://api.example.com/plans"
+                            placeholder={
+                                data.isShortCode
+                                    ? "https://api.example.com/user-info"
+                                    : "https://api.example.com/plans"
+                            }
                             disabled={isAdmin}
                             readOnly={isAdmin}
                         />
+                        {data.isShortCode && !isAdmin && (
+                            <p className={styles.hint}>
+                                💡 Add API to enrich welcome message with user data (balance, validity, etc.)
+                            </p>
+                        )}
                     </div>
                 )}
 
