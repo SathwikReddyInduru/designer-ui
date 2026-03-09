@@ -203,11 +203,6 @@ const RightSidebar = () => {
                             disabled={isAdmin}
                             readOnly={isAdmin}
                         />
-                        {data.isShortCode && !isAdmin && (
-                            <p className={styles.hint}>
-                                💡 Add API to enrich welcome message with user data (balance, validity, etc.)
-                            </p>
-                        )}
                     </div>
                 )}
 
