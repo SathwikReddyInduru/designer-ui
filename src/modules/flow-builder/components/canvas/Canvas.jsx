@@ -3,6 +3,7 @@ import ReactFlow, { Background, Controls, addEdge, applyEdgeChanges, applyNodeCh
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useReactFlow } from 'reactflow';
 import styles from './Canvas.module.css'
 import 'reactflow/dist/style.css'
 
@@ -13,7 +14,8 @@ const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen, closeMenu }) => 
     const hasSelection = useSelector((state) =>
         state.flow.selectedNode || state.flow.selectedEdge
     )
-
+    const { user } = useSelector((state) => state.auth);
+    const { fitView } = useReactFlow();
     const isDragging = useRef(false)
 
     const onNodesChange = useCallback((changes) => {
@@ -43,13 +45,22 @@ const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen, closeMenu }) => 
     }, [dispatch, edges])
 
     const onConnect = useCallback((connection) => {
-        dispatch(saveToHistory())
+        dispatch(saveToHistory());
 
         const outgoingEdges = edges.filter(
             (edge) => edge.source === connection.source
-        )
+        );
 
-        const nextLabel = (outgoingEdges.length + 1).toString()
+        const usedLabels = outgoingEdges
+            .map((edge) => edge.label)
+            .filter((label) => label != null && label !== "");
+
+        let nextNum = 1;
+        while (usedLabels.includes(nextNum.toString())) {
+            nextNum++;
+        }
+
+        const nextLabel = nextNum.toString();
 
         const styledEdge = {
             ...connection,
@@ -92,24 +103,37 @@ const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen, closeMenu }) => 
         const handleKeyDown = (e) => {
 
             if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-                e.preventDefault()
-                dispatch(undo())
+                e.preventDefault();
+                dispatch(undo());
             }
 
             if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
-                e.preventDefault()
-                dispatch(redo())
+                e.preventDefault();
+                dispatch(redo());
             }
 
-            if ((e.key === "Delete") && hasSelection) {
-                e.preventDefault()
-                dispatch(deleteSelected())
+            if (e.key === "Delete" && hasSelection) {
+                e.preventDefault();
+                dispatch(deleteSelected({ isAdmin: user?.role === 'admin' }));
             }
         }
 
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [dispatch, hasSelection])
+
+    useEffect(() => {
+        if (nodes.length > 0) {
+            const timer = setTimeout(() => {
+                fitView({
+                    padding: 0.2,
+                    duration: 800,
+                });
+            }, 150);
+
+            return () => clearTimeout(timer);
+        }
+    }, [fitView]);
 
     return (
         <div style={{ flex: 1, position: 'relative' }} onClick={() => closeMenu()}>
@@ -140,6 +164,7 @@ const Canvas = ({ toggleLeft, toggleRight, leftOpen, rightOpen, closeMenu }) => 
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
                 onEdgeClick={onEdgeClick}
+                nodesDraggable={user?.role !== 'admin'}
                 defaultViewport={{ x: 0, y: 0, zoom: 1.1 }}
                 minZoom={0.3}
                 maxZoom={1.5}

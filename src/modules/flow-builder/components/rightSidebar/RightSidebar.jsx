@@ -1,5 +1,5 @@
+import { ChevronDown, ChevronUp, Plus, Power, PowerOff, Smartphone, Trash2 } from 'lucide-react'
 import { saveToHistory, setEdges, updateNodeData } from '../../store/flowSlice'
-import { Plus, Power, PowerOff, Smartphone, Trash2 } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useEffect, useState } from 'react'
 import styles from './RightSidebar.module.css'
@@ -16,6 +16,9 @@ const RightSidebar = () => {
     const currentEdge = edges.find(e => e.id === selectedEdge)
 
     const [localLabel, setLocalLabel] = useState(currentEdge?.label || '')
+    const [shortcodeUrlsOpen, setShortcodeUrlsOpen] = useState(false)
+
+    const [pendingInputs, setPendingInputs] = useState([])
 
     const isAdmin = user?.role === 'admin'
 
@@ -23,13 +26,17 @@ const RightSidebar = () => {
         setLocalLabel(currentEdge?.label || '')
     }, [currentEdge?.id, currentEdge?.label])
 
+    useEffect(() => {
+        setShortcodeUrlsOpen(false)
+        setPendingInputs([])
+    }, [selectedNode])
+
     const getEmptyMessage = () => {
         if (isAdmin) {
             return nodes.length === 0
                 ? "Sync the flow to View"
                 : "Select a Node to View its Properties";
         }
-
         return nodes.length === 0
             ? "Add a Node to Start Building the Flow"
             : "Select a node or connection to edit";
@@ -57,34 +64,67 @@ const RightSidebar = () => {
             <div className={styles.rightSidebar}>
                 <div className={styles.container}>
                     <h3 className={styles.heading}>Link Settings</h3>
-
                     <label className={styles.label}>USER INPUT (Digit)</label>
-                    <input
-                        className={styles.input}
-                        value={localLabel}
-                        onChange={(e) => {
-                            if (isAdmin) return
-                            setLocalLabel(e.target.value)
-                        }}
-                        onBlur={commitLabel}
-                        placeholder="e.g. 1, 2, *, #"
-                        maxLength={1}
-                        disabled={isAdmin}
-                        readOnly={isAdmin}
-                    />
-                    {isAdmin && (
-                        <p className={styles.adminHint}>
-                            🔒 View-only mode (Admin)
-                        </p>
-                    )}
-                    {!isAdmin && (
-                        <p className={styles.hint}>Enter a single digit (0-9), *, or #</p>
-                    )}
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            className={styles.input}
+                            value={localLabel}
+                            onChange={(e) => {
+                                if (isAdmin) return;
+                                const val = e.target.value.slice(-1);
+                                setLocalLabel(val);
+
+                                if (val && !/^[0-9*#$]/.test(val)) {
+                                    e.target.style.borderColor = 'red';
+                                } else {
+                                    e.target.style.borderColor = '';
+                                }
+                            }}
+                            onBlur={() => {
+                                if (isAdmin) return;
+
+                                const trimmed = localLabel.trim();
+
+                                if (!trimmed) {
+                                    alert("Edge label cannot be empty");
+                                    setLocalLabel(currentEdge?.label || '1');
+                                    return;
+                                }
+
+                                if (!/^[0-9*#$]$/.test(trimmed)) {
+                                    alert("Label must be a single digit (0-9), *, # or $");
+                                    setLocalLabel(currentEdge?.label || '');
+                                    return;
+                                }
+
+                                const sourceEdges = edges.filter(e => e.source === currentEdge.source);
+                                const hasDuplicate = sourceEdges.some(
+                                    e => e.id !== selectedEdge && e.label === trimmed
+                                );
+
+                                if (hasDuplicate) {
+                                    alert(`Label "${trimmed}" is already used on this node`);
+                                    setLocalLabel(currentEdge?.label || '');
+                                    return;
+                                }
+
+                                const updated = edges.map(edge =>
+                                    edge.id === selectedEdge ? { ...edge, label: trimmed } : edge
+                                );
+                                dispatch(setEdges(updated));
+                                dispatch(saveToHistory());
+                            }}
+                            placeholder="1, 2, *, #"
+                            maxLength={1}
+                            disabled={isAdmin}
+                            readOnly={isAdmin}
+                        />
+                    </div>
+                    {!isAdmin && <p className={styles.hint}>Single character: 0–9, *, #</p>}
                 </div>
             </div>
         )
     }
-
     // ── Node editing ──
     if (!currentNode) {
         return (
@@ -102,10 +142,7 @@ const RightSidebar = () => {
 
     const updateField = (key, value) => {
         if (isAdmin) return
-        dispatch(updateNodeData({
-            nodeId: selectedNode,
-            updates: { [key]: value }
-        }))
+        dispatch(updateNodeData({ nodeId: selectedNode, updates: { [key]: value } }))
     }
 
     const handleBlur = () => {
@@ -116,8 +153,39 @@ const RightSidebar = () => {
     const apiCalls = data.apiCalls || []
 
     const handleAddApiCall = () => {
-        const newEntry = data.isAPI ? DEFAULT_API_URL : ''
-        updateField('apiCalls', [...apiCalls, newEntry])
+        const id = Date.now()
+        if (data.isAPI) {
+            updateField('apiCalls', [...apiCalls, DEFAULT_API_URL])
+            dispatch(saveToHistory())
+        } else {
+            setPendingInputs(prev => [...prev, { id, value: '' }])
+        }
+        if (!shortcodeUrlsOpen) setShortcodeUrlsOpen(true)
+    }
+
+    const handlePendingChange = (id, value) => {
+        setPendingInputs(prev => prev.map(p => p.id === id ? { ...p, value } : p))
+    }
+
+    const handlePendingBlur = (id) => {
+        const pending = pendingInputs.find(p => p.id === id)
+        if (!pending) return
+
+        if (pending.value.trim() !== '') {
+            updateField('apiCalls', [...apiCalls, pending.value.trim()])
+            dispatch(saveToHistory())
+        }
+        setPendingInputs(prev => prev.filter(p => p.id !== id))
+    }
+
+    const handleRemovePending = (id) => {
+        setPendingInputs(prev => prev.filter(p => p.id !== id))
+    }
+
+    const handleRemoveApiCall = (index) => {
+        const updated = apiCalls.filter((_, i) => i !== index)
+        updateField('apiCalls', updated)
+        if (updated.length === 0 && pendingInputs.length === 0) setShortcodeUrlsOpen(false)
         dispatch(saveToHistory())
     }
 
@@ -125,14 +193,17 @@ const RightSidebar = () => {
         updateField('apiCalls', apiCalls.map((url, i) => i === index ? value : url))
     }
 
-    const handleApiCallBlur = () => {
+    const handleApiCallBlur = (index) => {
+        const value = apiCalls[index]
+        if (value.trim() === '') {
+            const updated = apiCalls.filter((_, i) => i !== index)
+            updateField('apiCalls', updated)
+            if (updated.length === 0 && pendingInputs.length === 0) setShortcodeUrlsOpen(false)
+        }
         dispatch(saveToHistory())
     }
-
-    const handleRemoveApiCall = (index) => {
-        updateField('apiCalls', apiCalls.filter((_, i) => i !== index))
-        dispatch(saveToHistory())
-    }
+    const totalVisible = apiCalls.length + pendingInputs.length
+    const filledCalls = apiCalls
 
     return (
         <div className={styles.rightSidebar}>
@@ -174,9 +245,7 @@ const RightSidebar = () => {
                     <div className={styles.apiBox}>
                         <label className={styles.apiLabel}>Dynamic Menu Builder</label>
                         <div className={styles.apiRow}>
-                            <span className={styles.apiText}>
-                                Build menu from API response?
-                            </span>
+                            <span className={styles.apiText}>Build menu from API response?</span>
                             <button
                                 onClick={() => {
                                     if (isAdmin) return
@@ -206,51 +275,106 @@ const RightSidebar = () => {
                     />
                 </div>
 
-                {(data.isAPI || data.isShortCode) && (
-                    <div className={styles.section}>
-
-                        <div className={styles.labelRow}>
-                            <label className={styles.label}>
-                                API URL
-                                {data.isShortCode && <span className={styles.optional}> (Optional)</span>}
-                            </label>
+                {(data.isShortCode || data.isAPI) && (
+                    <div className={styles.apiUrlCard}>
+                        <div
+                            className={styles.apiUrlCardHeader}
+                            onClick={isAdmin && filledCalls.length > 1
+                                ? () => setShortcodeUrlsOpen(prev => !prev)
+                                : undefined}
+                            style={{ cursor: isAdmin && filledCalls.length > 1 ? 'pointer' : 'default' }}
+                        >
+                            <div className={styles.apiUrlCardTitle}>
+                                <span className={styles.apiUrlDot} />
+                                <span className={styles.apiUrlLabel}>
+                                    API URL
+                                    {data.isShortCode && <span className={styles.optional}> (Optional)</span>}
+                                </span>
+                            </div>
                             {!isAdmin && (
                                 <button
                                     className={styles.labelAddBtn}
                                     onClick={handleAddApiCall}
-                                    title="Add another API URL"
+                                    title="Add API URL"
                                 >
                                     <Plus size={12} />
                                 </button>
                             )}
+                            {isAdmin && filledCalls.length > 1 && (
+                                <span className={styles.labelToggleBtn}>
+                                    {shortcodeUrlsOpen
+                                        ? <ChevronUp size={14} />
+                                        : <ChevronDown size={14} />}
+                                </span>
+                            )}
                         </div>
-
-                        {apiCalls.map((url, index) => (
-                            <div key={index} className={styles.apiCallRow}>
-                                <input
-                                    className={styles.input}
-                                    value={url}
-                                    onChange={(e) => handleApiCallChange(index, e.target.value)}
-                                    onBlur={handleApiCallBlur}
-                                    placeholder={
-                                        data.isShortCode
-                                            ? 'https://api.example.com/user-info'
-                                            : 'https://api.example.com/plans'
-                                    }
-                                    disabled={isAdmin}
-                                    readOnly={isAdmin}
-                                />
-                                {!isAdmin && apiCalls.length > 1 && (
+                        <div
+                            className={styles.apiUrlCardBody}
+                            style={{
+                                maxHeight: (() => {
+                                    if (!isAdmin) return totalVisible > 0 ? '500px' : '0px'
+                                    if (filledCalls.length === 0) return '0px'
+                                    if (filledCalls.length === 1) return '500px'
+                                    return shortcodeUrlsOpen ? '500px' : '0px'
+                                })(),
+                                overflow: 'hidden',
+                                transition: 'max-height 0.3s ease',
+                            }}
+                        >
+                            {isAdmin && filledCalls.map((url, index) => (
+                                <div key={index} className={styles.apiCallRow}>
+                                    <input
+                                        className={styles.input}
+                                        value={url}
+                                        readOnly
+                                        disabled
+                                    />
+                                </div>
+                            ))}
+                            {!isAdmin && apiCalls.map((url, index) => (
+                                <div key={index} className={styles.apiCallRow}>
+                                    <input
+                                        className={styles.input}
+                                        value={url}
+                                        onChange={(e) => handleApiCallChange(index, e.target.value)}
+                                        onBlur={() => handleApiCallBlur(index)}
+                                        placeholder={
+                                            data.isShortCode
+                                                ? 'https://api.example.com/user-info'
+                                                : 'https://api.example.com/plans'
+                                        }
+                                    />
+                                    {(data.isShortCode || apiCalls.length > 1) && (
+                                        <button
+                                            className={styles.apiCallRemove}
+                                            onClick={() => handleRemoveApiCall(index)}
+                                            title="Remove"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                            {!isAdmin && pendingInputs.map((p) => (
+                                <div key={p.id} className={styles.apiCallRow}>
+                                    <input
+                                        className={styles.input}
+                                        value={p.value}
+                                        onChange={(e) => handlePendingChange(p.id, e.target.value)}
+                                        onBlur={() => handlePendingBlur(p.id)}
+                                        placeholder="https://api.example.com/user-info"
+                                        autoFocus
+                                    />
                                     <button
                                         className={styles.apiCallRemove}
-                                        onClick={() => handleRemoveApiCall(index)}
+                                        onClick={() => handleRemovePending(p.id)}
                                         title="Remove"
                                     >
                                         <Trash2 size={14} />
                                     </button>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 

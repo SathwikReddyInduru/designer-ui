@@ -80,7 +80,7 @@ const flowSlice = createSlice({
                                 isAPI,
                                 isDynamicPlanNode: false,
                                 isShortCode,
-                                ...(isShortCode && { apiCalls: [''] }),
+                                ...(isShortCode && { apiCalls: [] }),
                                 ...(isAPI && { apiCalls: [DEFAULT_API_URL] }),
                             },
                             style: {
@@ -127,19 +127,29 @@ const flowSlice = createSlice({
             saveHistory(state)
         },
 
-        deleteSelected: (state) => {
-            if (!state.selectedNode && !state.selectedEdge) return
-            saveHistory(state)
+        deleteSelected: (state, action) => {
+            const isAdmin = action.payload?.isAdmin ?? false;
+
+            if (isAdmin) {
+                console.warn("[Admin] Delete action blocked");
+                return;
+            }
+
+            if (!state.selectedNode && !state.selectedEdge) return;
+
+            saveHistory(state);
+
             if (state.selectedNode) {
-                state.nodes = state.nodes.filter(n => n.id !== state.selectedNode)
+                state.nodes = state.nodes.filter(n => n.id !== state.selectedNode);
                 state.edges = state.edges.filter(
                     e => e.source !== state.selectedNode && e.target !== state.selectedNode
-                )
-                state.selectedNode = null
+                );
+                state.selectedNode = null;
             }
+
             if (state.selectedEdge) {
-                state.edges = state.edges.filter(e => e.id !== state.selectedEdge)
-                state.selectedEdge = null
+                state.edges = state.edges.filter(e => e.id !== state.selectedEdge);
+                state.selectedEdge = null;
             }
         },
 
