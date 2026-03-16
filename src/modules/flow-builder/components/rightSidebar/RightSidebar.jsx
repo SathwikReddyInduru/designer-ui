@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp, Plus, Power, PowerOff, Smartphone, Trash2 } from 'lucide-react'
 import { saveToHistory, setEdges, updateNodeData } from '../../store/flowSlice'
 import { useDispatch, useSelector } from 'react-redux'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import styles from './RightSidebar.module.css'
 
 const DEFAULT_API_URL = 'http://localhost:6215/api/billing/v1/available-plans'
@@ -17,9 +17,12 @@ const RightSidebar = () => {
 
     const [localLabel, setLocalLabel] = useState(currentEdge?.label || '')
     const [shortcodeUrlsOpen, setShortcodeUrlsOpen] = useState(false)
-    const [pendingInputs, setPendingInputs] = useState([])
     const [passOnOpen, setPassOnOpen] = useState(false)
-    const [pendingPassOn, setPendingPassOn] = useState(null)
+    const [localPassOnValue, setLocalPassOnValue] = useState('')
+    const [splitByOpen, setSplitByOpen] = useState(false)
+    const [localSplitBy, setLocalSplitBy] = useState('')
+
+    const prevNodeRef = useRef(null)
 
     const isAdmin = user?.role === 'admin'
 
@@ -29,10 +32,70 @@ const RightSidebar = () => {
 
     useEffect(() => {
         setShortcodeUrlsOpen(false)
-        setPendingInputs([])
         setPassOnOpen(false)
-        setPendingPassOn(null)
+        setSplitByOpen(false)
     }, [selectedNode])
+
+    useEffect(() => {
+        if (currentNode) {
+            const passOnValue = Array.isArray(currentNode.data?.passOnValue)
+                ? currentNode.data.passOnValue
+                : []
+            setLocalPassOnValue(passOnValue.join(', '))
+
+            const splitBy = currentNode.data?.splitBy || ''
+            setLocalSplitBy(splitBy)
+        }
+    }, [selectedNode, currentNode?.data?.passOnValue, currentNode?.data?.splitBy])
+
+    useEffect(() => {
+        const prevNodeId = prevNodeRef.current
+
+        if (prevNodeId && prevNodeId !== selectedNode) {
+            const prevNode = nodes.find(n => n.id === prevNodeId)
+
+            if (prevNode) {
+                const data = prevNode.data || {}
+                let needsUpdate = false
+                const updates = {}
+
+                if (data.isShortCode) {
+                    const apiCalls = Array.isArray(data.apiCalls) ? data.apiCalls : []
+                    const cleanedApiCalls = apiCalls.filter(url => url && url.trim() !== '')
+
+                    if (cleanedApiCalls.length !== apiCalls.length) {
+                        updates.apiCalls = cleanedApiCalls
+                        needsUpdate = true
+                    }
+                }
+
+                const passOnValue = Array.isArray(data.passOnValue) ? data.passOnValue : []
+                if (passOnValue.length === 0 || passOnValue.every(v => !v || v.trim() === '')) {
+                    if (data.passOnValue && data.passOnValue.length > 0) {
+                        updates.passOnValue = []
+                        needsUpdate = true
+                    }
+                }
+
+                const splitBy = data.splitBy || ''
+                if (!splitBy || splitBy.trim() === '') {
+                    if (data.splitBy) {
+                        updates.splitBy = ''
+                        needsUpdate = true
+                    }
+                }
+
+                if (needsUpdate) {
+                    dispatch(updateNodeData({
+                        nodeId: prevNodeId,
+                        updates
+                    }))
+                }
+            }
+        }
+
+        prevNodeRef.current = selectedNode
+    }, [selectedNode, nodes, dispatch])
 
     const getEmptyMessage = () => {
         if (isAdmin) {
@@ -101,13 +164,13 @@ const RightSidebar = () => {
                                 dispatch(setEdges(updated));
                                 dispatch(saveToHistory());
                             }}
-                            placeholder="1, 2, *, #"
+                            placeholder="1, 2, *, #, $"
                             maxLength={1}
                             disabled={isAdmin}
                             readOnly={isAdmin}
                         />
                     </div>
-                    {!isAdmin && <p className={styles.hint}>Single character: 0–9, *, #</p>}
+                    {!isAdmin && <p className={styles.hint}>Single character: 0–9, *, #, $</p>}
                 </div>
             </div>
         )
@@ -138,100 +201,98 @@ const RightSidebar = () => {
         dispatch(saveToHistory())
     }
 
-    const apiCalls = data.apiCalls || []
-    const passOnValue = data.passOnValue || ''
+    const apiCalls = Array.isArray(data.apiCalls) ? data.apiCalls : []
+    const passOnValue = Array.isArray(data.passOnValue) ? data.passOnValue : []
+    const splitBy = data.splitBy || ''
 
     // API URL handlers
     const handleAddApiCall = () => {
-        const id = Date.now()
-        if (data.isAPI) {
-            updateField('apiCalls', [...apiCalls, DEFAULT_API_URL])
-            dispatch(saveToHistory())
-        } else {
-            setPendingInputs(prev => [...prev, { id, value: '' }])
-        }
+        if (isAdmin) return
+
+        const newUrl = data.isAPI ? DEFAULT_API_URL : ''
+        updateField('apiCalls', [...apiCalls, newUrl])
+        dispatch(saveToHistory())
+
         if (!shortcodeUrlsOpen) setShortcodeUrlsOpen(true)
     }
 
-    const handlePendingChange = (id, value) => {
-        setPendingInputs(prev => prev.map(p => p.id === id ? { ...p, value } : p))
+    const handleApiCallChange = (index, value) => {
+        const updated = apiCalls.map((url, i) => i === index ? value : url)
+        updateField('apiCalls', updated)
     }
 
-    const handlePendingBlur = (id) => {
-        const pending = pendingInputs.find(p => p.id === id)
-        if (!pending) return
-
-        if (pending.value.trim() !== '') {
-            updateField('apiCalls', [...apiCalls, pending.value.trim()])
-            dispatch(saveToHistory())
-        }
-        setPendingInputs(prev => prev.filter(p => p.id !== id))
-    }
-
-    const handleRemovePending = (id) => {
-        setPendingInputs(prev => prev.filter(p => p.id !== id))
+    const handleApiCallBlur = () => {
+        if (isAdmin) return
+        dispatch(saveToHistory())
     }
 
     const handleRemoveApiCall = (index) => {
         const updated = apiCalls.filter((_, i) => i !== index)
         updateField('apiCalls', updated)
-        if (updated.length === 0 && pendingInputs.length === 0) setShortcodeUrlsOpen(false)
-        dispatch(saveToHistory())
-    }
 
-    const handleApiCallChange = (index, value) => {
-        updateField('apiCalls', apiCalls.map((url, i) => i === index ? value : url))
-    }
-
-    const handleApiCallBlur = (index) => {
-        const value = apiCalls[index]
-        if (value.trim() === '') {
-            const updated = apiCalls.filter((_, i) => i !== index)
-            updateField('apiCalls', updated)
-            if (updated.length === 0 && pendingInputs.length === 0) setShortcodeUrlsOpen(false)
+        if (updated.length === 0) {
+            setShortcodeUrlsOpen(false)
         }
         dispatch(saveToHistory())
     }
 
     // Pass-on Value handlers
     const handleAddPassOn = () => {
-        if (!passOnValue) {
-            setPendingPassOn({ id: Date.now(), value: '' })
-            setPassOnOpen(true)
-        }
+        if (isAdmin) return
+        setPassOnOpen(true)
     }
 
     const handlePassOnChange = (value) => {
-        if (passOnValue) {
-            updateField('passOnValue', value)
-        } else if (pendingPassOn) {
-            setPendingPassOn({ ...pendingPassOn, value })
-        }
+        if (isAdmin) return
+        setLocalPassOnValue(value)
     }
 
     const handlePassOnBlur = () => {
-        if (pendingPassOn) {
-            if (pendingPassOn.value.trim() !== '') {
-                updateField('passOnValue', pendingPassOn.value.trim())
-                dispatch(saveToHistory())
-            }
-            setPendingPassOn(null)
-            if (!pendingPassOn.value.trim()) {
-                setPassOnOpen(false)
-            }
-        } else if (passOnValue) {
-            dispatch(saveToHistory())
-        }
+        if (isAdmin) return
+
+        const arr = localPassOnValue
+            .split(',')
+            .map(v => v.trim())
+            .filter(v => v !== '')
+
+        updateField('passOnValue', arr)
+        dispatch(saveToHistory())
     }
 
     const handleRemovePassOn = () => {
-        updateField('passOnValue', '')
+        if (isAdmin) return
+        updateField('passOnValue', [])
+        setLocalPassOnValue('')
         dispatch(saveToHistory())
         setPassOnOpen(false)
-        setPendingPassOn(null)
     }
 
-    const totalVisible = apiCalls.length + pendingInputs.length
+    // SplitBy handlers
+    const handleAddSplitBy = () => {
+        if (isAdmin) return
+        setSplitByOpen(true)
+    }
+
+    const handleSplitByChange = (value) => {
+        if (isAdmin) return
+        setLocalSplitBy(value)
+    }
+
+    const handleSplitByBlur = () => {
+        if (isAdmin) return
+
+        const trimmed = localSplitBy.trim()
+        updateField('splitBy', trimmed)
+        dispatch(saveToHistory())
+    }
+
+    const handleRemoveSplitBy = () => {
+        if (isAdmin) return
+        updateField('splitBy', '')
+        setLocalSplitBy('')
+        dispatch(saveToHistory())
+        setSplitByOpen(false)
+    }
 
     return (
         <div className={styles.rightSidebar}>
@@ -303,90 +364,115 @@ const RightSidebar = () => {
                     />
                 </div>
 
-                {/* Pass-on Value Section */}
+                {/* Split By Section */}
                 <div className={styles.apiUrlCard}>
-                    <div
-                        className={styles.apiUrlCardHeader}
-                        style={{ cursor: 'default' }}
-                    >
+                    <div className={styles.apiUrlCardHeader}>
                         <div className={styles.apiUrlCardTitle}>
                             <span className={styles.apiUrlDot} />
                             <span className={styles.apiUrlLabel}>
-                                Pass-on Value
+                                Split By
                                 <span className={styles.optional}> (Optional)</span>
                             </span>
                         </div>
-                        {!isAdmin && !passOnValue && !pendingPassOn && (
+
+                        {!isAdmin && !splitBy && !splitByOpen && (
                             <button
                                 className={styles.labelAddBtn}
-                                onClick={handleAddPassOn}
-                                title="Add Pass-on Value"
+                                onClick={handleAddSplitBy}
+                                title="Add Split By"
                             >
                                 <Plus size={12} />
                             </button>
                         )}
                     </div>
+
                     <div
                         className={styles.apiUrlCardBody}
                         style={{
-                            maxHeight: passOnValue || pendingPassOn ? '500px' : '0px',
+                            maxHeight: splitByOpen || splitBy ? '500px' : '0px',
                             overflow: 'hidden',
                             transition: 'max-height 0.3s ease',
                         }}
                     >
-                        {/* Admin view */}
-                        {isAdmin && passOnValue && (
+                        {(splitByOpen || splitBy) && (
                             <div className={styles.apiCallRow}>
                                 <input
                                     className={styles.input}
-                                    value={passOnValue}
-                                    readOnly
-                                    disabled
+                                    value={localSplitBy}
+                                    onChange={(e) => handleSplitByChange(e.target.value)}
+                                    onBlur={handleSplitByBlur}
+                                    placeholder="Ex: , | or -"
+                                    disabled={isAdmin}
+                                    readOnly={isAdmin}
+                                    autoFocus={splitByOpen}
                                 />
+
+                                {!isAdmin && (
+                                    <button
+                                        className={styles.apiCallRemove}
+                                        onClick={handleRemoveSplitBy}
+                                        title="Remove"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
                             </div>
                         )}
+                    </div>
+                </div>
 
-                        {/* User view - existing value */}
-                        {!isAdmin && passOnValue && (
-                            <div className={styles.apiCallRow}>
-                                <input
-                                    className={styles.input}
-                                    value={passOnValue}
-                                    onChange={(e) => handlePassOnChange(e.target.value)}
-                                    onBlur={handlePassOnBlur}
-                                    placeholder="Enter pass-on value"
-                                />
-                                <button
-                                    className={styles.apiCallRemove}
-                                    onClick={handleRemovePassOn}
-                                    title="Remove"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
+                {/* Pass-on Values Section */}
+                <div className={styles.apiUrlCard}>
+                    <div className={styles.apiUrlCardHeader}>
+                        <div className={styles.apiUrlCardTitle}>
+                            <span className={styles.apiUrlDot} />
+                            <span className={styles.apiUrlLabel}>
+                                Pass-on Values
+                                <span className={styles.optional}> (Optional)</span>
+                            </span>
+                        </div>
+
+                        {!isAdmin && passOnValue.length === 0 && !passOnOpen && (
+                            <button
+                                className={styles.labelAddBtn}
+                                onClick={handleAddPassOn}
+                                title="Add Pass-on Values"
+                            >
+                                <Plus size={12} />
+                            </button>
                         )}
+                    </div>
 
-                        {/* User view - pending input */}
-                        {!isAdmin && pendingPassOn && (
+                    <div
+                        className={styles.apiUrlCardBody}
+                        style={{
+                            maxHeight: passOnOpen || passOnValue.length > 0 ? '500px' : '0px',
+                            overflow: 'hidden',
+                            transition: 'max-height 0.3s ease',
+                        }}
+                    >
+                        {(passOnOpen || passOnValue.length > 0) && (
                             <div className={styles.apiCallRow}>
                                 <input
                                     className={styles.input}
-                                    value={pendingPassOn.value}
+                                    value={localPassOnValue}
                                     onChange={(e) => handlePassOnChange(e.target.value)}
                                     onBlur={handlePassOnBlur}
-                                    placeholder="Enter pass-on value"
-                                    autoFocus
+                                    placeholder="Ex: msisdn, accountId, planId"
+                                    disabled={isAdmin}
+                                    readOnly={isAdmin}
+                                    autoFocus={passOnOpen}
                                 />
-                                <button
-                                    className={styles.apiCallRemove}
-                                    onClick={() => {
-                                        setPendingPassOn(null)
-                                        setPassOnOpen(false)
-                                    }}
-                                    title="Remove"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
+
+                                {!isAdmin && (
+                                    <button
+                                        className={styles.apiCallRemove}
+                                        onClick={handleRemovePassOn}
+                                        title="Remove"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -409,6 +495,7 @@ const RightSidebar = () => {
                                     {data.isShortCode && <span className={styles.optional}> (Optional)</span>}
                                 </span>
                             </div>
+
                             {!isAdmin && (
                                 <button
                                     className={styles.labelAddBtn}
@@ -418,19 +505,19 @@ const RightSidebar = () => {
                                     <Plus size={12} />
                                 </button>
                             )}
+
                             {isAdmin && apiCalls.length > 1 && (
                                 <span className={styles.labelToggleBtn}>
-                                    {shortcodeUrlsOpen
-                                        ? <ChevronUp size={14} />
-                                        : <ChevronDown size={14} />}
+                                    {shortcodeUrlsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </span>
                             )}
                         </div>
+
                         <div
                             className={styles.apiUrlCardBody}
                             style={{
                                 maxHeight: (() => {
-                                    if (!isAdmin) return totalVisible > 0 ? '500px' : '0px'
+                                    if (!isAdmin) return apiCalls.length > 0 ? '500px' : '0px'
                                     if (apiCalls.length === 0) return '0px'
                                     if (apiCalls.length === 1) return '500px'
                                     return shortcodeUrlsOpen ? '500px' : '0px'
@@ -439,30 +526,23 @@ const RightSidebar = () => {
                                 transition: 'max-height 0.3s ease',
                             }}
                         >
-                            {isAdmin && apiCalls.map((url, index) => (
-                                <div key={index} className={styles.apiCallRow}>
-                                    <input
-                                        className={styles.input}
-                                        value={url}
-                                        readOnly
-                                        disabled
-                                    />
-                                </div>
-                            ))}
-                            {!isAdmin && apiCalls.map((url, index) => (
+                            {apiCalls.map((url, index) => (
                                 <div key={index} className={styles.apiCallRow}>
                                     <input
                                         className={styles.input}
                                         value={url}
                                         onChange={(e) => handleApiCallChange(index, e.target.value)}
-                                        onBlur={() => handleApiCallBlur(index)}
+                                        onBlur={handleApiCallBlur}
                                         placeholder={
                                             data.isShortCode
                                                 ? 'https://api.example.com/user-info'
                                                 : 'https://api.example.com/plans'
                                         }
+                                        disabled={isAdmin}
+                                        readOnly={isAdmin}
                                     />
-                                    {(data.isShortCode || apiCalls.length > 1) && (
+
+                                    {!isAdmin && (data.isShortCode || apiCalls.length > 1) && (
                                         <button
                                             className={styles.apiCallRemove}
                                             onClick={() => handleRemoveApiCall(index)}
@@ -471,25 +551,6 @@ const RightSidebar = () => {
                                             <Trash2 size={14} />
                                         </button>
                                     )}
-                                </div>
-                            ))}
-                            {!isAdmin && pendingInputs.map((p) => (
-                                <div key={p.id} className={styles.apiCallRow}>
-                                    <input
-                                        className={styles.input}
-                                        value={p.value}
-                                        onChange={(e) => handlePendingChange(p.id, e.target.value)}
-                                        onBlur={() => handlePendingBlur(p.id)}
-                                        placeholder="https://api.example.com/user-info"
-                                        autoFocus
-                                    />
-                                    <button
-                                        className={styles.apiCallRemove}
-                                        onClick={() => handleRemovePending(p.id)}
-                                        title="Remove"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
                                 </div>
                             ))}
                         </div>
