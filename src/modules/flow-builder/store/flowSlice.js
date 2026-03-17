@@ -2,6 +2,21 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const DEFAULT_API_URL = 'http://localhost:6215/api/billing/v1/available-plans'
 
+const getDefaultNodeData = () => ({
+    label: '',
+    text: '',
+    type: 'submenu',
+    enabled: true,
+
+    isAPI: false,
+    isShortCode: false,
+    isDynamicPlanNode: false,
+
+    apiCalls: [],
+    passOnValue: [],
+    splitBy: '',
+})
+
 const initialState = {
     nodes: [],
     edges: [],
@@ -20,6 +35,22 @@ const saveHistory = (state) => {
 
     if (state.history.length > 75) {
         state.history.shift()
+    }
+}
+
+const normalizeNodeData = (data = {}) => {
+    const defaults = getDefaultNodeData()
+
+    return {
+        ...defaults,
+        ...data,
+
+        type: typeof data.type === 'string' ? data.type : defaults.type,
+        enabled: typeof data.enabled === 'boolean' ? data.enabled : defaults.enabled,
+
+        apiCalls: Array.isArray(data.apiCalls) ? data.apiCalls : [],
+        passOnValue: Array.isArray(data.passOnValue) ? data.passOnValue : [],
+        splitBy: typeof data.splitBy === 'string' ? data.splitBy : '',
     }
 }
 
@@ -66,25 +97,22 @@ const flowSlice = createSlice({
 
                 const nodeData = nodeTypes[type] || nodeTypes.submenu
 
+                const normalizedData = normalizeNodeData({
+                    label: nodeData.label,
+                    text: nodeData.text,
+                    type: nodeData.type,
+                    isAPI,
+                    isShortCode,
+                    ...(isAPI && { apiCalls: [DEFAULT_API_URL] }),
+                })
+
                 return {
                     payload: {
                         node: {
                             id,
                             type: 'default',
                             position,
-                            data: {
-                                label: nodeData.label,
-                                text: nodeData.text,
-                                type: nodeData.type,
-                                enabled: true,
-                                isAPI,
-                                isDynamicPlanNode: false,
-                                isShortCode,
-                                ...(isShortCode && { apiCalls: [] }),
-                                ...(isAPI && { apiCalls: [DEFAULT_API_URL] }),
-                                passOnValue: [],
-                                splitBy: '',
-                            },
+                            data: normalizedData,
                             style: {
                                 background: nodeData.bgColor,
                                 border: `2px solid ${nodeData.borderColor}`,
@@ -105,12 +133,18 @@ const flowSlice = createSlice({
             const { nodeId, updates } = action.payload
             const node = state.nodes.find(n => n.id === nodeId)
             if (node) {
-                node.data = { ...node.data, ...updates }
+                node.data = normalizeNodeData({
+                    ...node.data,
+                    ...updates
+                })
             }
         },
 
         setNodes: (state, action) => {
-            state.nodes = action.payload
+            state.nodes = (action.payload || []).map(node => ({
+                ...node,
+                data: normalizeNodeData(node.data || {})
+            }))
         },
 
         setEdges: (state, action) => {
@@ -177,7 +211,7 @@ const flowSlice = createSlice({
             state.nodes = previous.nodes.map((node) => ({
                 ...node,
                 position: { ...node.position },
-                data: { ...node.data },
+                data: normalizeNodeData(node.data),
                 selected: false,
                 dragging: false,
             }))
@@ -201,7 +235,7 @@ const flowSlice = createSlice({
             state.nodes = next.nodes.map((node) => ({
                 ...node,
                 position: { ...node.position },
-                data: { ...node.data },
+                data: normalizeNodeData(node.data),
                 selected: false,
                 dragging: false,
             }))
@@ -214,7 +248,12 @@ const flowSlice = createSlice({
 
         loadFlowState: (state, action) => {
             const { nodes, edges } = action.payload
-            state.nodes = nodes || []
+
+            state.nodes = (nodes || []).map(node => ({
+                ...node,
+                data: normalizeNodeData(node.data || {})
+            }))
+
             state.edges = edges || []
             state.selectedNode = null
             state.selectedEdge = null
