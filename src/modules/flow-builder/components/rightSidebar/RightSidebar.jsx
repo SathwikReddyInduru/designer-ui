@@ -16,11 +16,12 @@ const RightSidebar = () => {
     const currentEdge = edges.find(e => e.id === selectedEdge)
 
     const [localLabel, setLocalLabel] = useState(currentEdge?.label || '')
-    const [shortcodeUrlsOpen, setShortcodeUrlsOpen] = useState(false)
-    const [passOnOpen, setPassOnOpen] = useState(false)
-    const [localPassOnValue, setLocalPassOnValue] = useState('')
     const [splitByOpen, setSplitByOpen] = useState(false)
+    const [passOnOpen, setPassOnOpen] = useState(false)
+    const [shortcodeUrlsOpen, setShortcodeUrlsOpen] = useState(false)
     const [localSplitBy, setLocalSplitBy] = useState('')
+    const [localPassOnValue, setLocalPassOnValue] = useState('')
+    const [localApiCalls, setLocalApiCalls] = useState([])
 
     const prevNodeRef = useRef(null)
 
@@ -45,8 +46,13 @@ const RightSidebar = () => {
 
             const splitBy = currentNode.data?.splitBy || ''
             setLocalSplitBy(splitBy)
+
+            const apiCalls = Array.isArray(currentNode.data?.apiCalls)
+                ? currentNode.data.apiCalls
+                : []
+            setLocalApiCalls(apiCalls)
         }
-    }, [selectedNode, currentNode?.data?.passOnValue, currentNode?.data?.splitBy])
+    }, [selectedNode, currentNode?.data?.passOnValue, currentNode?.data?.splitBy, currentNode?.data?.apiCalls])
 
     useEffect(() => {
         const prevNodeId = prevNodeRef.current
@@ -95,7 +101,7 @@ const RightSidebar = () => {
         }
 
         prevNodeRef.current = selectedNode
-    }, [selectedNode, nodes, dispatch])
+    }, [selectedNode, nodes, dispatch, currentNode])
 
     const getEmptyMessage = () => {
         if (isAdmin) {
@@ -110,6 +116,8 @@ const RightSidebar = () => {
 
     // ── Edge editing ──
     if (currentEdge) {
+        const fallbackLabel = currentEdge?.label || '1'
+
         return (
             <div className={styles.rightSidebar}>
                 <div className={styles.container}>
@@ -137,13 +145,13 @@ const RightSidebar = () => {
 
                                 if (!trimmed) {
                                     alert("Edge label cannot be empty");
-                                    setLocalLabel(currentEdge?.label || '1');
+                                    setLocalLabel(fallbackLabel);
                                     return;
                                 }
 
                                 if (!/^[0-9*#$]$/.test(trimmed)) {
                                     alert("Label must be a single digit (0-9), *, # or $");
-                                    setLocalLabel(currentEdge?.label || '');
+                                    setLocalLabel(fallbackLabel);
                                     return;
                                 }
 
@@ -154,7 +162,7 @@ const RightSidebar = () => {
 
                                 if (hasDuplicate) {
                                     alert(`Label "${trimmed}" is already used on this node`);
-                                    setLocalLabel(currentEdge?.label || '');
+                                    setLocalLabel(fallbackLabel);
                                     return;
                                 }
 
@@ -201,7 +209,6 @@ const RightSidebar = () => {
         dispatch(saveToHistory())
     }
 
-    const apiCalls = Array.isArray(data.apiCalls) ? data.apiCalls : []
     const passOnValue = Array.isArray(data.passOnValue) ? data.passOnValue : []
     const splitBy = data.splitBy || ''
 
@@ -210,24 +217,30 @@ const RightSidebar = () => {
         if (isAdmin) return
 
         const newUrl = data.isAPI ? DEFAULT_API_URL : ''
-        updateField('apiCalls', [...apiCalls, newUrl])
+        const updated = [...localApiCalls, newUrl]
+        setLocalApiCalls(updated)
+        updateField('apiCalls', updated)
         dispatch(saveToHistory())
 
         if (!shortcodeUrlsOpen) setShortcodeUrlsOpen(true)
     }
 
     const handleApiCallChange = (index, value) => {
-        const updated = apiCalls.map((url, i) => i === index ? value : url)
-        updateField('apiCalls', updated)
+        if (isAdmin) return
+        const updated = localApiCalls.map((url, i) => i === index ? value : url)
+        setLocalApiCalls(updated)
     }
 
     const handleApiCallBlur = () => {
         if (isAdmin) return
+        updateField('apiCalls', localApiCalls)
         dispatch(saveToHistory())
     }
 
     const handleRemoveApiCall = (index) => {
-        const updated = apiCalls.filter((_, i) => i !== index)
+        if (isAdmin) return
+        const updated = localApiCalls.filter((_, i) => i !== index)
+        setLocalApiCalls(updated)
         updateField('apiCalls', updated)
 
         if (updated.length === 0) {
@@ -483,10 +496,10 @@ const RightSidebar = () => {
                     <div className={styles.apiUrlCard}>
                         <div
                             className={styles.apiUrlCardHeader}
-                            onClick={isAdmin && apiCalls.length > 1
+                            onClick={isAdmin && localApiCalls.length > 1
                                 ? () => setShortcodeUrlsOpen(prev => !prev)
                                 : undefined}
-                            style={{ cursor: isAdmin && apiCalls.length > 1 ? 'pointer' : 'default' }}
+                            style={{ cursor: isAdmin && localApiCalls.length > 1 ? 'pointer' : 'default' }}
                         >
                             <div className={styles.apiUrlCardTitle}>
                                 <span className={styles.apiUrlDot} />
@@ -506,7 +519,7 @@ const RightSidebar = () => {
                                 </button>
                             )}
 
-                            {isAdmin && apiCalls.length > 1 && (
+                            {isAdmin && localApiCalls.length > 1 && (
                                 <span className={styles.labelToggleBtn}>
                                     {shortcodeUrlsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </span>
@@ -517,16 +530,16 @@ const RightSidebar = () => {
                             className={styles.apiUrlCardBody}
                             style={{
                                 maxHeight: (() => {
-                                    if (!isAdmin) return apiCalls.length > 0 ? '500px' : '0px'
-                                    if (apiCalls.length === 0) return '0px'
-                                    if (apiCalls.length === 1) return '500px'
+                                    if (!isAdmin) return localApiCalls.length > 0 ? '500px' : '0px'
+                                    if (localApiCalls.length === 0) return '0px'
+                                    if (localApiCalls.length === 1) return '500px'
                                     return shortcodeUrlsOpen ? '500px' : '0px'
                                 })(),
                                 overflow: 'hidden',
                                 transition: 'max-height 0.3s ease',
                             }}
                         >
-                            {apiCalls.map((url, index) => (
+                            {localApiCalls.map((url, index) => (
                                 <div key={index} className={styles.apiCallRow}>
                                     <input
                                         className={styles.input}
@@ -542,7 +555,7 @@ const RightSidebar = () => {
                                         readOnly={isAdmin}
                                     />
 
-                                    {!isAdmin && (data.isShortCode || apiCalls.length > 1) && (
+                                    {!isAdmin && (data.isShortCode || localApiCalls.length > 1) && (
                                         <button
                                             className={styles.apiCallRemove}
                                             onClick={() => handleRemoveApiCall(index)}
