@@ -15,7 +15,37 @@ const getDefaultNodeData = () => ({
     apiCalls: [],
     passOnValue: [],
     splitBy: '',
+
+    // Schema: Only fields defined here are allowed.
+    // Any unknown fields from backend will be removed automatically.
 })
+
+const normalizeNodeData = (data = {}) => {
+    const defaults = getDefaultNodeData()
+
+    const normalized = {}
+
+    for (const key in defaults) {
+        if (key in data) {
+            normalized[key] = data[key]
+        } else {
+            normalized[key] = defaults[key]
+        }
+    }
+
+    // Type validations
+    normalized.type = typeof normalized.type === 'string' ? normalized.type : defaults.type
+    normalized.enabled = typeof normalized.enabled === 'boolean' ? normalized.enabled : defaults.enabled
+    normalized.isAPI = typeof normalized.isAPI === 'boolean' ? normalized.isAPI : defaults.isAPI
+    normalized.isShortCode = typeof normalized.isShortCode === 'boolean' ? normalized.isShortCode : defaults.isShortCode
+    normalized.isDynamicPlanNode = typeof normalized.isDynamicPlanNode === 'boolean' ? normalized.isDynamicPlanNode : defaults.isDynamicPlanNode
+
+    normalized.apiCalls = Array.isArray(normalized.apiCalls) ? normalized.apiCalls : defaults.apiCalls
+    normalized.passOnValue = Array.isArray(normalized.passOnValue) ? normalized.passOnValue : defaults.passOnValue
+    normalized.splitBy = typeof normalized.splitBy === 'string' ? normalized.splitBy : defaults.splitBy
+
+    return normalized
+}
 
 const initialState = {
     nodes: [],
@@ -35,22 +65,6 @@ const saveHistory = (state) => {
 
     if (state.history.length > 75) {
         state.history.shift()
-    }
-}
-
-const normalizeNodeData = (data = {}) => {
-    const defaults = getDefaultNodeData()
-
-    return {
-        ...defaults,
-        ...data,
-
-        type: typeof data.type === 'string' ? data.type : defaults.type,
-        enabled: typeof data.enabled === 'boolean' ? data.enabled : defaults.enabled,
-
-        apiCalls: Array.isArray(data.apiCalls) ? data.apiCalls : [],
-        passOnValue: Array.isArray(data.passOnValue) ? data.passOnValue : [],
-        splitBy: typeof data.splitBy === 'string' ? data.splitBy : '',
     }
 }
 

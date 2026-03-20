@@ -69,11 +69,13 @@
     outline: none;
     width: 100%;
     box-sizing: border-box;
+    box-shadow: 0 0 0 0 transparent;
+    transition: box-shadow 0.2s ease;
 }
 
 .inputGroup input:focus {
-    border: 1px solid #ccc;
-    border-bottom: 2px solid #185d8a;
+    border-color: #ccc;
+    box-shadow: 0 2px 0 0 #185d8a;
 }
 
 .error {

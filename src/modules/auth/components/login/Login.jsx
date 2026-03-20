@@ -5,8 +5,24 @@ import logo from '@/assets/xiusLogo.png';
 import { useDispatch } from 'react-redux';
 import { login } from '../../store/authSlice';
 
+const CREDENTIALS = {
+    user: {
+        id: 1,
+        username: 'user',
+        password: 'user',
+        role: 'user'
+    },
+    admin: {
+        id: 2,
+        username: 'admin',
+        password: 'admin',
+        role: 'admin'
+    }
+}
+
 const Login = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         username: '',
@@ -14,8 +30,6 @@ const Login = () => {
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -26,49 +40,38 @@ const Login = () => {
         setError('');
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setError('');
 
-        try {
-            // const response = await axios.post('/api/login', formData);
-            // const { token } = response.data;
-            // localStorage.setItem('token', token);
-
-            const tempUser = 'user';
-            const tempPass = 'user';
-
-            const adminUser = 'admin';
-            const adminPass = 'admin';
-
-            if (formData.username === tempUser && formData.password === tempPass) {
-                dispatch(login({
-                    id: 1,
-                    name: formData.username,
-                    role: "user"
-                }));
-                navigate('/flowBuilder');
-            }
-            else if (formData.username === adminUser && formData.password === adminPass) {
-                dispatch(login({
-                    id: 2,
-                    name: formData.username,
-                    role: "admin"
-                }));
-                navigate('/flowBuilder');
-            }
-            else {
-                setError('Invalid username or password.');
-                setFormData({
-                    username: '',
-                    password: '',
-                });
-            }
-        } catch (err) {
-            setError('Something went wrong. Please try again.');
-        } finally {
+        if (!formData.username.trim() || !formData.password.trim()) {
+            setError('Please enter both username and password.');
             setIsLoading(false);
+            return;
         }
+
+        const matchedUser = Object.values(CREDENTIALS).find(
+            cred => cred.username === formData.username &&
+                cred.password === formData.password
+        );
+
+        if (matchedUser) {
+            dispatch(login({
+                id: matchedUser.id,
+                name: matchedUser.username,
+                role: matchedUser.role
+            }));
+            navigate('/flowBuilder');
+        } else {
+            setError('Invalid username or password.');
+            setFormData({
+                username: '',
+                password: '',
+            });
+        }
+
+        setIsLoading(false);
     };
 
     return (
