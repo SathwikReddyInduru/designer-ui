@@ -11,6 +11,7 @@
 .container {
     flex: 1;
     overflow-y: auto;
+    scrollbar-width: thin;
     padding: 24px;
 }
 

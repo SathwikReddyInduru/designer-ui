@@ -535,7 +535,8 @@ const RightSidebar = () => {
                                     if (localApiCalls.length === 1) return '500px'
                                     return shortcodeUrlsOpen ? '500px' : '0px'
                                 })(),
-                                overflow: 'hidden',
+                                overflowY: 'auto',
+                                scrollbarWidth: 'thin',
                                 transition: 'max-height 0.3s ease',
                             }}
                         >
