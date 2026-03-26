@@ -1,9 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit'
-import authReducer from '../modules/auth/store/authSlice'
+import authReducer from '@/modules/auth/store/authSlice'
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import { combineReducers } from '@reduxjs/toolkit'
-import flowReducer from '../modules/flow-builder/store/flowSlice'
+import flowReducer from '@/modules/flow-builder/store/flowSlice'
 
 const appReducer = combineReducers({
     auth: authReducer,

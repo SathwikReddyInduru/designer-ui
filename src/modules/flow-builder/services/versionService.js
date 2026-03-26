@@ -1,5 +1,5 @@
 import axios from "axios";
-import { formatForBackend, formatForFrontend } from "../utils/formatConverter";
+import { formatForBackend, formatForFrontend } from "@/modules/flow-builder/utils/formatConverter";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,

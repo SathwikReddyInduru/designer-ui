@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import Canvas from '../canvas/Canvas'
-import LeftSidebar from '../leftSidebar/LeftSidebar'
-import RightSidebar from '../rightSidebar/RightSidebar'
+import Canvas from '@/modules/flow-builder/components/canvas/Canvas'
+import LeftSidebar from '@/modules/flow-builder/components/leftSidebar/LeftSidebar'
+import RightSidebar from '@/modules/flow-builder/components/rightSidebar/RightSidebar'
 import logo from '@/assets/xiusLogo.png';
 import styles from './FlowBuilder.module.css'
 import { LogOut, UserCircle, UserIcon } from 'lucide-react';
-import { logout } from '../../../auth/store/authSlice';
+import { logout } from '@/modules/auth/store/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { ReactFlowProvider } from 'reactflow';
 

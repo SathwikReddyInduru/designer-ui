@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
 import logo from '@/assets/xiusLogo.png';
 import { useDispatch } from 'react-redux';
-import { login } from '../../store/authSlice';
+import { login } from '@/modules/auth/store/authSlice';
 
 const CREDENTIALS = {
     user: {

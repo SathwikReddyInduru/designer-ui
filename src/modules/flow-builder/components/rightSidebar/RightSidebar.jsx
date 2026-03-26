@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Plus, Power, PowerOff, Smartphone, Trash2 } from 'lucide-react'
-import { saveToHistory, setEdges, updateNodeData } from '../../store/flowSlice'
+import { saveToHistory, setEdges, updateNodeData } from '@/modules/flow-builder/store/flowSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { useEffect, useState, useRef } from 'react'
 import styles from './RightSidebar.module.css'

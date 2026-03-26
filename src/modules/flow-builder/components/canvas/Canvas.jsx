@@ -1,4 +1,4 @@
-import { deleteSelected, redo, saveToHistory, setEdges, setNodes, setSelectedEdge, setSelectedNode, undo } from '../../store/flowSlice'
+import { deleteSelected, redo, saveToHistory, setEdges, setNodes, setSelectedEdge, setSelectedNode, undo } from '@/modules/flow-builder/store/flowSlice'
 import ReactFlow, { Background, Controls, addEdge, applyEdgeChanges, applyNodeChanges } from 'reactflow'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
