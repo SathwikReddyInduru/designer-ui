@@ -273,3 +273,75 @@
         opacity: 1;
     }
 }
+
+/* ── Admin capabilities panel ── */
+.capabilitiesPanel {
+    margin-top: 8px;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    background: #0a1628;
+    overflow: hidden;
+}
+
+.capabilitiesHeader {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #3b82f6;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid #1e3a5f;
+    background: #0d1f38;
+}
+
+.capabilitiesList {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.capabilityItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 14px;
+    transition: background 0.15s;
+}
+
+.capabilityItem:hover {
+    background: #111f35;
+}
+
+.capabilityIcon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #1e3a5f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #60a5fa;
+}
+
+.capabilityText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.capabilityTitle {
+    font-size: 12px;
+    font-weight: 500;
+    color: #cbd5e1;
+}
+
+.capabilityDesc {
+    font-size: 11px;
+    color: #475569;
+    line-height: 1.4;
+}

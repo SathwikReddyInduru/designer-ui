@@ -1,10 +1,33 @@
-import { Database, Eraser, History, LayoutGrid, List, RotateCcw, RotateCw, Save, SaveAll, Trash2, X, Zap } from 'lucide-react'
+import { Database, Eraser, History, LayoutGrid, List, RotateCcw, RotateCw, Save, SaveAll, Trash2, X, Zap, Shield, Eye, Upload, GitBranch, Users } from 'lucide-react'
 import { addNode, clearCanvas, deleteSelected, loadFlowState, redo, undo } from '@/modules/flow-builder/store/flowSlice'
 import { saveVersionApi, getVersionsApi, loadVersionApi, publishApi } from "@/modules/flow-builder/services/versionService"
 import { useDispatch, useSelector } from 'react-redux'
 import { useState } from 'react'
 import styles from './LeftSidebar.module.css'
 import { useReactFlow } from 'reactflow'
+
+const ADMIN_CAPABILITIES = [
+    {
+        icon: Eye,
+        title: 'View-only canvas',
+        desc: 'Inspect the full flow without making edits.'
+    },
+    {
+        icon: Upload,
+        title: 'Publish & sync',
+        desc: 'Push the current flow live to production.'
+    },
+    {
+        icon: GitBranch,
+        title: 'Load any version',
+        desc: 'Browse and restore any saved version.'
+    },
+    {
+        icon: Users,
+        title: 'Manage users',
+        desc: 'Control roles and access via the top-right menu.'
+    },
+]
 
 const LeftSidebar = () => {
     const reactFlowInstance = useReactFlow()
@@ -20,11 +43,12 @@ const LeftSidebar = () => {
     const canUndo = useSelector((state) => state.flow.history.length > 0)
     const canRedo = useSelector((state) => state.flow.future.length > 0)
 
+    const isAdmin = user?.role === 'admin'
+
     const isOverlapping = (pos, nodes, width, height) => {
         return nodes.some((node) => {
             const nodeWidth = 200
             const nodeHeight = 100
-
             return !(
                 pos.x + width < node.position.x ||
                 pos.x > node.position.x + nodeWidth ||
@@ -35,58 +59,34 @@ const LeftSidebar = () => {
     }
 
     const handleAddNode = (type) => {
-        const {
-            getViewport,
-            getNodes,
-        } = reactFlowInstance
-
+        const { getViewport, getNodes } = reactFlowInstance
         const viewport = getViewport()
-
         const wrapper = document.querySelector('.react-flow')
         const bounds = wrapper.getBoundingClientRect()
-
         const padding = 40
-
         const minX = (-viewport.x) / viewport.zoom
         const minY = (-viewport.y) / viewport.zoom
-
         const maxX = minX + bounds.width / viewport.zoom
         const maxY = minY + bounds.height / viewport.zoom
-
         const nodes = getNodes()
-
         const nodeWidth = 200
         const nodeHeight = 100
-
         let position
         let tries = 0
         const maxTries = 100
-
         do {
             position = {
-                x:
-                    minX +
-                    padding +
-                    Math.random() * (maxX - minX - nodeWidth - padding * 2),
-                y:
-                    minY +
-                    padding +
-                    Math.random() * (maxY - minY - nodeHeight - padding * 2),
+                x: minX + padding + Math.random() * (maxX - minX - nodeWidth - padding * 2),
+                y: minY + padding + Math.random() * (maxY - minY - nodeHeight - padding * 2),
             }
-
             tries++
-        } while (
-            isOverlapping(position, nodes, nodeWidth, nodeHeight) &&
-            tries < maxTries
-        )
-
+        } while (isOverlapping(position, nodes, nodeWidth, nodeHeight) && tries < maxTries)
         dispatch(addNode({ type, position }))
     }
 
     const handleSaveVersion = async () => {
         const versionName = window.prompt("Enter version name:")
         if (!versionName?.trim()) return
-
         try {
             await saveVersionApi(versionName, flow.nodes, flow.edges)
             alert(`✅ Version "${versionName}" saved successfully`)
@@ -99,9 +99,7 @@ const LeftSidebar = () => {
     const handleOpenModal = async () => {
         try {
             const response = await getVersionsApi()
-
             setVersions(response.data.versions)
-
             setShowModal(true)
         } catch (error) {
             console.error(error)
@@ -112,17 +110,11 @@ const LeftSidebar = () => {
     const handleLoadVersion = async (versionName) => {
         try {
             const formatted = await loadVersionApi(versionName)
-
             dispatch(loadFlowState(formatted))
             setShowModal(false)
-
             setTimeout(() => {
-                reactFlowInstance.fitView({
-                    padding: 0.2,
-                    duration: 800
-                })
+                reactFlowInstance.fitView({ padding: 0.2, duration: 800 })
             }, 100)
-
         } catch (error) {
             console.error(error)
             alert("❌ Failed to load version")
@@ -138,9 +130,7 @@ const LeftSidebar = () => {
     const handlePublish = async () => {
         try {
             const response = await publishApi(nodes, edges)
-
             alert(response.data.message)
-
         } catch (error) {
             console.error(error)
             alert("❌ Failed to publish flow")
@@ -149,87 +139,122 @@ const LeftSidebar = () => {
 
     return (
         <div className={styles.sidebar}>
+
+            {/* ── Title ── */}
             <h2 className={styles.sidebarh2}>
-                <Zap size={20} /> Design USSD
+                <Zap size={20} />
+                {isAdmin ? 'Admin Panel' : 'Design USSD'}
             </h2>
 
-            <div className={styles.row}>
-                <button
-                    onClick={() => dispatch(undo())}
-                    disabled={!canUndo}
-                    title="Undo (Ctrl+Z)"
-                >
-                    <RotateCcw size={14} /> Undo
-                </button>
-                <button
-                    onClick={() => dispatch(redo())}
-                    disabled={!canRedo}
-                    title="Redo (Ctrl+Y)"
-                >
-                    <RotateCw size={14} /> Redo
-                </button>
-            </div>
-
-            {user.role === 'admin' && (
-                <button
-                    className={styles.publishBtn}
-                    onClick={handlePublish}
-                    disabled={nodes.length === 0}>
-                    <Save size={18} />
-                    Publish & Sync
-                </button>
-            )}
-
-            <button
-                onClick={() => handleAddNode('shortcode')}
-                disabled={user.role == 'admin'}>
-                <LayoutGrid size={16} /> New Short Code
-            </button>
-
-            <button
-                onClick={() => handleAddNode('submenu')}
-                disabled={user.role == 'admin'}>
-                <List size={16} /> Add Sub-Menu
-            </button>
-
-            <button
-                onClick={() => handleAddNode('api')}
-                disabled={user.role == 'admin'}>
-                <Database size={16} /> Add API Node
-            </button>
-
-            <hr />
-
-            <button
-                onClick={handleSaveVersion}
-                disabled={user.role == 'admin' || nodes.length === 0}>
-                <Save size={16} /> Save Version
-            </button>
-
-            <button onClick={handleOpenModal}>
-                <History size={16} /> Sync Version...
-            </button>
-
-            <button
-                onClick={handleClearCanvas}
-                disabled={nodes.length === 0}>
-                <Eraser size={16} /> Clear Canvas
-            </button>
-
-            {user.role !== 'admin' && (
-                (selectedNode || selectedEdge) && (
+            {/* ══════════════ ADMIN VIEW ══════════════ */}
+            {isAdmin ? (
+                <>
                     <button
-                        className={styles.delete}
-                        onClick={() => dispatch(deleteSelected())}
-                        disabled={user.role == 'admin'}
-                        title="Delete (Delete key)"
+                        className={styles.publishBtn}
+                        onClick={handlePublish}
+                        disabled={nodes.length === 0}
                     >
-                        <Trash2 size={16} /> Delete Selected
+                        <Save size={16} /> Publish & Sync
                     </button>
-                )
+
+                    <button onClick={handleOpenModal}>
+                        <History size={16} /> Sync Version...
+                    </button>
+
+                    <button
+                        onClick={handleClearCanvas}
+                        disabled={nodes.length === 0}
+                    >
+                        <Eraser size={16} /> Clear Canvas
+                    </button>
+
+                    {/* Admin capabilities panel */}
+                    <div className={styles.capabilitiesPanel}>
+                        <div className={styles.capabilitiesHeader}>
+                            <Shield size={13} />
+                            <span>Admin capabilities</span>
+                        </div>
+                        <ul className={styles.capabilitiesList}>
+                            {ADMIN_CAPABILITIES.map(({ icon: Icon, title, desc }) => (
+                                <li key={title} className={styles.capabilityItem}>
+                                    <div className={styles.capabilityIcon}>
+                                        <Icon size={13} />
+                                    </div>
+                                    <div className={styles.capabilityText}>
+                                        <span className={styles.capabilityTitle}>{title}</span>
+                                        <span className={styles.capabilityDesc}>{desc}</span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </>
+            ) : (
+
+                /* ══════════════ USER VIEW ══════════════ */
+                <>
+                    <div className={styles.row}>
+                        <button
+                            onClick={() => dispatch(undo())}
+                            disabled={!canUndo}
+                            title="Undo (Ctrl+Z)"
+                        >
+                            <RotateCcw size={14} /> Undo
+                        </button>
+                        <button
+                            onClick={() => dispatch(redo())}
+                            disabled={!canRedo}
+                            title="Redo (Ctrl+Y)"
+                        >
+                            <RotateCw size={14} /> Redo
+                        </button>
+                    </div>
+
+                    <button onClick={() => handleAddNode('shortcode')}>
+                        <LayoutGrid size={16} /> New Short Code
+                    </button>
+
+                    <button onClick={() => handleAddNode('submenu')}>
+                        <List size={16} /> Add Sub-Menu
+                    </button>
+
+                    <button onClick={() => handleAddNode('api')}>
+                        <Database size={16} /> Add API Node
+                    </button>
+
+                    <hr />
+
+                    <button
+                        onClick={handleSaveVersion}
+                        disabled={nodes.length === 0}
+                    >
+                        <Save size={16} /> Save Version
+                    </button>
+
+                    <button onClick={handleOpenModal}>
+                        <History size={16} /> Sync Version...
+                    </button>
+
+                    <button
+                        onClick={handleClearCanvas}
+                        disabled={nodes.length === 0}
+                    >
+                        <Eraser size={16} /> Clear Canvas
+                    </button>
+
+                    {(selectedNode || selectedEdge) && (
+                        <button
+                            className={styles.delete}
+                            onClick={() => dispatch(deleteSelected())}
+                            title="Delete (Delete key)"
+                        >
+                            <Trash2 size={16} /> Delete Selected
+                        </button>
+                    )}
+                </>
             )}
 
-            {/* Version Modal */}
+            {/* ── Version Modal (shared) ── */}
             {showModal && (
                 <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
                     <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -241,7 +266,6 @@ const LeftSidebar = () => {
                                 size={20}
                             />
                         </div>
-
                         <div className={styles.versionList}>
                             {versions.length === 0 ? (
                                 <p className={styles.emptyMessage}>No versions available</p>
@@ -259,7 +283,6 @@ const LeftSidebar = () => {
                                 ))
                             )}
                         </div>
-
                         {versions.length > 0 && (
                             <div className={styles.modalFooter}>
                                 <p className={styles.hint}>Click on a version to load it</p>
