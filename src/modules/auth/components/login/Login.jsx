@@ -1,77 +1,49 @@
+import logo from '@/assets/xiusLogo.png';
+import { loginApi } from '@/modules/auth/services/authService';
+import { login } from '@/modules/auth/store/authSlice';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
-import logo from '@/assets/xiusLogo.png';
-import { useDispatch } from 'react-redux';
-import { login } from '@/modules/auth/store/authSlice';
-
-const CREDENTIALS = {
-    user: {
-        id: 1,
-        username: 'user',
-        password: 'user',
-        role: 'user'
-    },
-    admin: {
-        id: 2,
-        username: 'admin',
-        password: 'admin',
-        role: 'admin'
-    }
-}
 
 const Login = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-    });
+    const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
         setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
         setError('');
 
         if (!formData.username.trim() || !formData.password.trim()) {
             setError('Please enter both username and password.');
-            setIsLoading(false);
             return;
         }
 
-        const matchedUser = Object.values(CREDENTIALS).find(
-            cred => cred.username === formData.username &&
-                cred.password === formData.password
-        );
+        setIsLoading(true);
+        try {
+            const res = await loginApi(formData.username.trim(), formData.password);
+            const { id, username, role } = res.data;
 
-        if (matchedUser) {
-            dispatch(login({
-                id: matchedUser.id,
-                name: matchedUser.username,
-                role: matchedUser.role
-            }));
+            // role comes from the backend — store as-is
+            dispatch(login({ id, name: username, role }));
             navigate('/flowBuilder');
-        } else {
-            setError('Invalid username or password.');
-            setFormData({
-                username: '',
-                password: '',
-            });
+        } catch (err) {
+            setError(err?.response?.data?.error || 'Invalid username or password.');
+            setFormData(prev => ({ ...prev, password: '' }));
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
     };
 
     return (
@@ -114,13 +86,11 @@ const Login = () => {
                 </div>
 
                 {error && (
-                    <p className={styles.error} role="alert">
-                        {error}
-                    </p>
+                    <p className={styles.error} role="alert">{error}</p>
                 )}
 
                 <button type="submit" className={styles.loginBtn} disabled={isLoading}>
-                    {isLoading ? 'Logging in...' : 'Login'}
+                    {isLoading ? <Loader2 size={18} className={styles.spin} /> : 'Login'}
                 </button>
             </form>
         </div>

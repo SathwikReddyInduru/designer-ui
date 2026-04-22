@@ -113,3 +113,10 @@
     background: #a0bfd4;
     cursor: not-allowed;
 }
+.spin {
+    animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

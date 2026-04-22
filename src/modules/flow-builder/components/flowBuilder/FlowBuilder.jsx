@@ -51,23 +51,24 @@ const FlowBuilder = () => {
                         {menuOpen && (
                             <div className={styles.dropdown}>
                                 {/* Username row — non-interactive */}
-                                <div className={styles.dropdownItem}>
-                                    <UserIcon size={17} /> {user?.name || 'User'}
+                                <div className={styles.dropdownUser}>
+                                    <UserIcon size={15} /> {user?.name || 'User'}
                                 </div>
 
                                 {/* Admin-only: User Management */}
                                 {user?.role === 'admin' && (
                                     <div
                                         className={styles.dropdownItem}
-                                        style={{ cursor: 'pointer' }}
                                         onClick={() => {
                                             setUserMgmtOpen(true)
                                             setMenuOpen(false)
                                         }}
                                     >
-                                        <Users size={16} /> User Management
+                                        <Users size={15} /> User Management
                                     </div>
                                 )}
+
+                                <div className={styles.dropdownDivider} />
 
                                 {/* Logout */}
                                 <div
@@ -77,7 +78,7 @@ const FlowBuilder = () => {
                                         setMenuOpen(false)
                                     }}
                                 >
-                                    <LogOut size={16} fill='red' /> Logout
+                                    <LogOut size={15} /> Logout
                                 </div>
                             </div>
                         )}

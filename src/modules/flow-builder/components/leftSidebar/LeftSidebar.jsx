@@ -1,12 +1,22 @@
-import { Database, Eraser, History, LayoutGrid, List, RotateCcw, RotateCw, Save, SaveAll, Trash2, X, Zap, Shield, Eye, Upload, GitBranch, Users } from 'lucide-react'
+import { getVersionsApi, loadVersionApi, publishApi, saveVersionApi } from "@/modules/flow-builder/services/versionService"
 import { addNode, clearCanvas, deleteSelected, loadFlowState, redo, undo } from '@/modules/flow-builder/store/flowSlice'
-import { saveVersionApi, getVersionsApi, loadVersionApi, publishApi } from "@/modules/flow-builder/services/versionService"
-import { useDispatch, useSelector } from 'react-redux'
+import { Database, Eraser, Eye, GitBranch, History, LayoutGrid, List, RotateCcw, RotateCw, Save, SaveAll, Shield, Trash2, Upload, Users, X, Zap } from 'lucide-react'
 import { useState } from 'react'
-import styles from './LeftSidebar.module.css'
+import { useDispatch, useSelector } from 'react-redux'
 import { useReactFlow } from 'reactflow'
+import styles from './LeftSidebar.module.css'
 
 const ADMIN_CAPABILITIES = [
+    {
+        icon: Users,
+        title: 'Manage users',
+        desc: 'Control roles and access via the top-right menu.'
+    },
+    {
+        icon: GitBranch,
+        title: 'Load any version',
+        desc: 'Browse and restore any saved version.'
+    },
     {
         icon: Eye,
         title: 'View-only canvas',
@@ -16,16 +26,6 @@ const ADMIN_CAPABILITIES = [
         icon: Upload,
         title: 'Publish & sync',
         desc: 'Push the current flow live to production.'
-    },
-    {
-        icon: GitBranch,
-        title: 'Load any version',
-        desc: 'Browse and restore any saved version.'
-    },
-    {
-        icon: Users,
-        title: 'Manage users',
-        desc: 'Control roles and access via the top-right menu.'
     },
 ]
 
@@ -99,7 +99,12 @@ const LeftSidebar = () => {
     const handleOpenModal = async () => {
         try {
             const response = await getVersionsApi()
-            setVersions(response.data.versions)
+            const fetched = response?.data?.versions
+            if (!Array.isArray(fetched)) {
+                alert("❌ Failed to fetch versions")
+                return
+            }
+            setVersions(fetched)
             setShowModal(true)
         } catch (error) {
             console.error(error)

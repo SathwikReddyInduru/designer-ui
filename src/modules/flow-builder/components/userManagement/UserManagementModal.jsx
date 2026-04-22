@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { X, Trash2, Save, Users, AlertCircle, Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2, Save, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './UserManagementModal.module.css';
 
 // ─── Mock data — remove this block and uncomment the import below when API is ready
@@ -48,7 +48,19 @@ const UserManagementModal = ({ onClose }) => {
     const [adding, setAdding] = useState(false);
     const [formError, setFormError] = useState('');
 
+    // Banner
+    const [banner, setBanner] = useState(null); // { type: 'success'|'error', message: string }
+    const bannerTimerRef = useRef(null);
+
     const overlayRef = useRef();
+
+    const showBanner = useCallback((type, message) => {
+        if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+        setBanner({ type, message });
+        bannerTimerRef.current = setTimeout(() => setBanner(null), 3500);
+    }, []);
+
+    useEffect(() => () => { if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current); }, []);
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -99,8 +111,9 @@ const UserManagementModal = ({ onClose }) => {
                 prev.map(u => u.id === user.id ? { ...u, ...changes[user.id], updated_at: now } : u)
             );
             setChanges(prev => { const next = { ...prev }; delete next[user.id]; return next; });
+            showBanner('success', `"${user.username}" updated successfully.`);
         } catch (err) {
-            alert(err?.response?.data?.error || 'Failed to save. Please try again.');
+            showBanner('error', err?.response?.data?.error || 'Failed to save. Please try again.');
         } finally {
             setSaving(prev => ({ ...prev, [user.id]: false }));
         }
@@ -108,13 +121,15 @@ const UserManagementModal = ({ onClose }) => {
 
     const handleDelete = async (userId) => {
         if (!window.confirm('Delete this user? This action cannot be undone.')) return;
+        const username = users.find(u => u.id === userId)?.username;
         setDeleting(prev => ({ ...prev, [userId]: true }));
         try {
             await deleteUserApi(userId);
             setUsers(prev => prev.filter(u => u.id !== userId));
             setChanges(prev => { const next = { ...prev }; delete next[userId]; return next; });
+            showBanner('success', `"${username}" deleted successfully.`);
         } catch (err) {
-            alert(err?.response?.data?.error || 'Failed to delete user.');
+            showBanner('error', err?.response?.data?.error || 'Failed to delete user.');
             setDeleting(prev => ({ ...prev, [userId]: false }));
         }
     };
@@ -135,6 +150,7 @@ const UserManagementModal = ({ onClose }) => {
             setForm(EMPTY_FORM);
             setShowForm(false);
             setShowPwd(false);
+            showBanner('success', `"${res.data.username}" added successfully.`);
         } catch (err) {
             setFormError(err?.response?.data?.error || 'Failed to create user.');
         } finally {
@@ -153,9 +169,26 @@ const UserManagementModal = ({ onClose }) => {
                 {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerLeft}>
-                        <Users size={17} strokeWidth={2} />
-                        <span>User Management</span>
+                        <div className={styles.headerIcon}>
+                            <Users size={16} strokeWidth={2} />
+                        </div>
+                        <div className={styles.headerTitle}>
+                            <span className={styles.headerTitleText}>User Management</span>
+                            <span className={styles.headerTitleSub}>Manage roles, status and access</span>
+                        </div>
                     </div>
+
+                    {/* Inline banner in header center */}
+                    {banner && (
+                        <div className={`${styles.headerBanner} ${banner.type === 'success' ? styles.headerBannerSuccess : styles.headerBannerError}`}>
+                            {banner.type === 'success'
+                                ? <CheckCircle size={13} />
+                                : <AlertCircle size={13} />
+                            }
+                            <span>{banner.message}</span>
+                        </div>
+                    )}
+
                     <div className={styles.headerRight}>
                         <button
                             className={styles.addUserBtn}
@@ -174,51 +207,63 @@ const UserManagementModal = ({ onClose }) => {
                 {/* Add User Form */}
                 {showForm && (
                     <div className={styles.addForm}>
-                        <div className={styles.addFormFields}>
-                            <input
-                                className={styles.addInput}
-                                placeholder="Username"
-                                value={form.username}
-                                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                                disabled={adding}
-                            />
-                            <div className={styles.pwdWrap}>
-                                <input
-                                    className={styles.addInput}
-                                    type={showPwd ? 'text' : 'password'}
-                                    placeholder="Password"
-                                    value={form.password}
-                                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                                    disabled={adding}
-                                />
+                        <div className={styles.addFormCard}>
+                            <p className={styles.addFormTitle}>New User</p>
+                            <div className={styles.addFormFields}>
+                                <div className={styles.addFormField}>
+                                    <label className={styles.addFormLabel}>Username</label>
+                                    <input
+                                        className={styles.addInput}
+                                        placeholder="e.g. john_doe"
+                                        value={form.username}
+                                        onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                                        disabled={adding}
+                                    />
+                                </div>
+                                <div className={styles.addFormField}>
+                                    <label className={styles.addFormLabel}>Password</label>
+                                    <div className={styles.pwdWrap}>
+                                        <input
+                                            className={styles.addInput}
+                                            type={showPwd ? 'text' : 'password'}
+                                            placeholder="••••••••"
+                                            value={form.password}
+                                            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                                            disabled={adding}
+                                        />
+                                        <button
+                                            className={styles.pwdToggle}
+                                            onClick={() => setShowPwd(p => !p)}
+                                            type="button"
+                                            tabIndex={-1}
+                                        >
+                                            {showPwd ? <EyeOff size={13} /> : <Eye size={13} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className={styles.addFormField} style={{ maxWidth: 110 }}>
+                                    <label className={styles.addFormLabel}>Role</label>
+                                    <select
+                                        className={styles.addSelect}
+                                        value={form.role}
+                                        onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                                        disabled={adding}
+                                    >
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
                                 <button
-                                    className={styles.pwdToggle}
-                                    onClick={() => setShowPwd(p => !p)}
-                                    type="button"
-                                    tabIndex={-1}
+                                    className={styles.addSubmitBtn}
+                                    onClick={handleAddUser}
+                                    disabled={adding}
                                 >
-                                    {showPwd ? <EyeOff size={13} /> : <Eye size={13} />}
+                                    {adding ? <Loader2 size={13} className={styles.spin} /> : <UserPlus size={13} />}
+                                    <span>{adding ? 'Adding…' : 'Add User'}</span>
                                 </button>
                             </div>
-                            <select
-                                className={styles.addSelect}
-                                value={form.role}
-                                onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                                disabled={adding}
-                            >
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                            <button
-                                className={styles.addSubmitBtn}
-                                onClick={handleAddUser}
-                                disabled={adding}
-                            >
-                                {adding ? <Loader2 size={13} className={styles.spin} /> : <UserPlus size={13} />}
-                                <span>{adding ? 'Adding…' : 'Add'}</span>
-                            </button>
+                            {formError && <p className={styles.formError}>{formError}</p>}
                         </div>
-                        {formError && <p className={styles.formError}>{formError}</p>}
                     </div>
                 )}
 
@@ -249,7 +294,7 @@ const UserManagementModal = ({ onClose }) => {
                         <table className={styles.table}>
                             <thead>
                                 <tr>
-                                    <th className={styles.colSerial}>#</th>
+                                    <th className={styles.colSerial}>S.No</th>
                                     <th className={styles.colName}>Username</th>
                                     <th className={styles.colRole}>Role</th>
                                     <th className={styles.colStatus}>Status</th>
@@ -290,23 +335,25 @@ const UserManagementModal = ({ onClose }) => {
                                             </td>
 
                                             <td className={styles.toggleCell}>
-                                                <label className={styles.toggleWrap}>
-                                                    <input
-                                                        type="checkbox"
-                                                        className={styles.toggleInput}
-                                                        checked={!!is_active}
-                                                        disabled={isSaving || isDeleting}
-                                                        onChange={e =>
-                                                            handleChange(user.id, 'is_active', e.target.checked)
-                                                        }
-                                                    />
-                                                    <span className={styles.toggleTrack}>
-                                                        <span className={styles.toggleThumb} />
+                                                <div className={styles.toggleInner}>
+                                                    <label className={styles.toggleWrap}>
+                                                        <input
+                                                            type="checkbox"
+                                                            className={styles.toggleInput}
+                                                            checked={!!is_active}
+                                                            disabled={isSaving || isDeleting}
+                                                            onChange={e =>
+                                                                handleChange(user.id, 'is_active', e.target.checked)
+                                                            }
+                                                        />
+                                                        <span className={styles.toggleTrack}>
+                                                            <span className={styles.toggleThumb} />
+                                                        </span>
+                                                    </label>
+                                                    <span className={`${styles.toggleLabel} ${is_active ? styles.labelActive : styles.labelInactive}`}>
+                                                        {is_active ? 'Active' : 'Inactive'}
                                                     </span>
-                                                </label>
-                                                <span className={`${styles.toggleLabel} ${is_active ? styles.labelActive : styles.labelInactive}`}>
-                                                    {is_active ? 'Active' : 'Inactive'}
-                                                </span>
+                                                </div>
                                             </td>
 
                                             <td className={styles.modifiedCell}>
@@ -352,8 +399,10 @@ const UserManagementModal = ({ onClose }) => {
                 {/* Footer */}
                 {!loading && !error && users.length > 0 && (
                     <div className={styles.footer}>
-                        <span>{users.length} user{users.length !== 1 ? 's' : ''}</span>
-                        <span>·</span>
+                        <div className={styles.footerLeft}>
+                            <div className={styles.footerDot} />
+                            <span>{users.length} user{users.length !== 1 ? 's' : ''} total</span>
+                        </div>
                         <span>Changes are saved per row</span>
                     </div>
                 )}
