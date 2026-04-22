@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
-import Canvas from '@/modules/flow-builder/components/canvas/Canvas'
-import LeftSidebar from '@/modules/flow-builder/components/leftSidebar/LeftSidebar'
-import RightSidebar from '@/modules/flow-builder/components/rightSidebar/RightSidebar'
 import logo from '@/assets/xiusLogo.png';
-import styles from './FlowBuilder.module.css'
-import { LogOut, UserCircle, UserIcon } from 'lucide-react';
 import { logout } from '@/modules/auth/store/authSlice';
+import Canvas from '@/modules/flow-builder/components/canvas/Canvas';
+import LeftSidebar from '@/modules/flow-builder/components/leftSidebar/LeftSidebar';
+import RightSidebar from '@/modules/flow-builder/components/rightSidebar/RightSidebar';
+import UserManagementModal from '@/modules/flow-builder/components/userManagement/UserManagementModal';
+import { LogOut, UserCircle, UserIcon, Users } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ReactFlowProvider } from 'reactflow';
+import styles from './FlowBuilder.module.css';
 
 const FlowBuilder = () => {
 
@@ -16,6 +17,7 @@ const FlowBuilder = () => {
     const [leftOpen, setLeftOpen] = useState(true)
     const [rightOpen, setRightOpen] = useState(true)
     const [menuOpen, setMenuOpen] = useState(false)
+    const [userMgmtOpen, setUserMgmtOpen] = useState(false)
     const menuRef = useRef()
 
     useEffect(() => {
@@ -48,9 +50,26 @@ const FlowBuilder = () => {
 
                         {menuOpen && (
                             <div className={styles.dropdown}>
+                                {/* Username row — non-interactive */}
                                 <div className={styles.dropdownItem}>
                                     <UserIcon size={17} /> {user?.name || 'User'}
                                 </div>
+
+                                {/* Admin-only: User Management */}
+                                {user?.role === 'admin' && (
+                                    <div
+                                        className={styles.dropdownItem}
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => {
+                                            setUserMgmtOpen(true)
+                                            setMenuOpen(false)
+                                        }}
+                                    >
+                                        <Users size={16} /> User Management
+                                    </div>
+                                )}
+
+                                {/* Logout */}
                                 <div
                                     className={styles.dropdownItem1}
                                     onClick={() => {
@@ -64,6 +83,7 @@ const FlowBuilder = () => {
                         )}
                     </div>
                 </nav>
+
                 <div className={styles.content}>
                     <div style={{ width: leftOpen ? '290px' : '0px', transition: 'width 0.3s ease', overflow: 'hidden' }}>
                         <LeftSidebar />
@@ -80,6 +100,11 @@ const FlowBuilder = () => {
                     </div>
                 </div>
             </div>
+
+            {/* User Management Modal — rendered outside layout so it overlays everything */}
+            {userMgmtOpen && (
+                <UserManagementModal onClose={() => setUserMgmtOpen(false)} />
+            )}
         </ReactFlowProvider>
     )
 }
