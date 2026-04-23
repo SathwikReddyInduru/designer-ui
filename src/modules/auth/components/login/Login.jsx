@@ -33,12 +33,13 @@ const Login = () => {
         setIsLoading(true);
         try {
             const res = await loginApi(formData.username.trim(), formData.password);
-            const { id, username, role } = res.data;
+            const { username, role } = res.data;
 
             // role comes from the backend — store as-is
-            dispatch(login({ id, name: username, role }));
+            dispatch(login({ name: username, role }));
             navigate('/flowBuilder');
         } catch (err) {
+            // Backend returns { error: "..." } on 400/401/403
             setError(err?.response?.data?.error || 'Invalid username or password.');
             setFormData(prev => ({ ...prev, password: '' }));
         } finally {
