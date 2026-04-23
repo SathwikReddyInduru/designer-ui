@@ -1,6 +1,6 @@
 import { getVersionsApi, loadVersionApi, publishApi, saveVersionApi } from "@/modules/flow-builder/services/versionService"
 import { addNode, clearCanvas, deleteSelected, loadFlowState, redo, undo } from '@/modules/flow-builder/store/flowSlice'
-import { Database, Eraser, Eye, GitBranch, History, LayoutGrid, List, RotateCcw, RotateCw, Save, SaveAll, Shield, Trash2, Upload, Users, X, Zap } from 'lucide-react'
+import { Database, Eraser, Eye, GitBranch, History, LayoutGrid, List, Loader2, RotateCcw, RotateCw, Save, SaveAll, Shield, Trash2, Upload, Users, X, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useReactFlow } from 'reactflow'
@@ -33,6 +33,10 @@ const LeftSidebar = () => {
     const reactFlowInstance = useReactFlow()
     const [showModal, setShowModal] = useState(false)
     const [versions, setVersions] = useState([])
+    const [loadingVersions, setLoadingVersions] = useState(false)
+    const [loadingVersion, setLoadingVersion] = useState(null)
+    const [loadingPublish, setLoadingPublish] = useState(false)
+    const [loadingSave, setLoadingSave] = useState(false)
 
     const dispatch = useDispatch()
     const { user } = useSelector((state) => state.auth)
@@ -87,32 +91,41 @@ const LeftSidebar = () => {
     const handleSaveVersion = async () => {
         const versionName = window.prompt("Enter version name:")
         if (!versionName?.trim()) return
+        setLoadingSave(true)
         try {
             await saveVersionApi(versionName, flow.nodes, flow.edges)
             alert(`✅ Version "${versionName}" saved successfully`)
         } catch (error) {
             console.error(error)
             alert("❌ Failed to save version")
+        } finally {
+            setLoadingSave(false)
         }
     }
 
     const handleOpenModal = async () => {
+        setVersions([])
+        setShowModal(true)
+        setLoadingVersions(true)
         try {
             const response = await getVersionsApi()
             const fetched = response?.data?.versions
             if (!Array.isArray(fetched)) {
-                alert("❌ Failed to fetch versions")
+                setVersions(null)
                 return
             }
             setVersions(fetched)
-            setShowModal(true)
         } catch (error) {
             console.error(error)
-            alert("❌ Failed to fetch versions")
+            setVersions(null)
+        } finally {
+            setLoadingVersions(false)
         }
     }
 
     const handleLoadVersion = async (versionName) => {
+        if (loadingVersion) return
+        setLoadingVersion(versionName)
         try {
             const formatted = await loadVersionApi(versionName)
             dispatch(loadFlowState(formatted))
@@ -123,6 +136,8 @@ const LeftSidebar = () => {
         } catch (error) {
             console.error(error)
             alert("❌ Failed to load version")
+        } finally {
+            setLoadingVersion(null)
         }
     }
 
@@ -133,12 +148,15 @@ const LeftSidebar = () => {
     }
 
     const handlePublish = async () => {
+        setLoadingPublish(true)
         try {
             const response = await publishApi(nodes, edges)
             alert(response.data.message)
         } catch (error) {
             console.error(error)
             alert("❌ Failed to publish flow")
+        } finally {
+            setLoadingPublish(false)
         }
     }
 
@@ -157,9 +175,12 @@ const LeftSidebar = () => {
                     <button
                         className={styles.publishBtn}
                         onClick={handlePublish}
-                        disabled={nodes.length === 0}
+                        disabled={nodes.length === 0 || loadingPublish}
                     >
-                        <Save size={16} /> Publish & Sync
+                        {loadingPublish
+                            ? <><Loader2 size={14} className={styles.spin} /> Publishing…</>
+                            : <><Save size={16} /> Publish & Sync</>
+                        }
                     </button>
 
                     <button onClick={handleOpenModal}>
@@ -173,7 +194,6 @@ const LeftSidebar = () => {
                         <Eraser size={16} /> Clear Canvas
                     </button>
 
-                    {/* Admin capabilities panel */}
                     <div className={styles.capabilitiesPanel}>
                         <div className={styles.capabilitiesHeader}>
                             <Shield size={13} />
@@ -231,9 +251,12 @@ const LeftSidebar = () => {
 
                     <button
                         onClick={handleSaveVersion}
-                        disabled={nodes.length === 0}
+                        disabled={nodes.length === 0 || loadingSave}
                     >
-                        <Save size={16} /> Save Version
+                        {loadingSave
+                            ? <><Loader2 size={14} className={styles.spin} /> Saving…</>
+                            : <><Save size={16} /> Save Version</>
+                        }
                     </button>
 
                     <button onClick={handleOpenModal}>
@@ -261,36 +284,62 @@ const LeftSidebar = () => {
 
             {/* ── Version Modal (shared) ── */}
             {showModal && (
-                <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
+                <div className={styles.modalOverlay} onClick={() => !loadingVersion && setShowModal(false)}>
                     <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h3><SaveAll size={16} /> Saved Versions</h3>
+                            <h3>
+                                <span className={styles.modalHeaderIcon}>
+                                    <SaveAll size={15} />
+                                </span>
+                                Saved Versions
+                            </h3>
                             <X
-                                onClick={() => setShowModal(false)}
+                                onClick={() => !loadingVersion && setShowModal(false)}
                                 className={styles.closeButton}
-                                size={20}
+                                size={16}
                             />
                         </div>
                         <div className={styles.versionList}>
-                            {versions.length === 0 ? (
+                            {loadingVersions ? (
+                                <div className={styles.versionLoading}>
+                                    <Loader2 size={18} className={styles.spin} />
+                                    <span>Fetching versions…</span>
+                                </div>
+                            ) : versions === null ? (
+                                <div className={styles.versionError}>
+                                    <span>Failed to fetch versions</span>
+                                    <button className={styles.retryBtn} onClick={handleOpenModal}>
+                                        Retry
+                                    </button>
+                                </div>
+                            ) : versions.length === 0 ? (
                                 <p className={styles.emptyMessage}>No versions available</p>
                             ) : (
-                                versions.map((version) => (
-                                    <div
-                                        key={version}
-                                        className={styles.versionItem}
-                                        onClick={() => handleLoadVersion(version)}
-                                    >
-                                        <div style={{ flex: 1 }}>
-                                            <span className={styles.versionName}>📄 {version}</span>
+                                versions.map((version) => {
+                                    const isLoadingThis = loadingVersion === version
+                                    const isLoadingOther = loadingVersion && loadingVersion !== version
+                                    return (
+                                        <div
+                                            key={version}
+                                            className={`${styles.versionItem} ${isLoadingOther ? styles.versionItemDimmed : ''}`}
+                                            onClick={() => !loadingVersion && handleLoadVersion(version)}
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <span className={styles.versionName}>📄 {version}</span>
+                                            </div>
+                                            {isLoadingThis && (
+                                                <Loader2 size={14} className={styles.spin} style={{ color: '#3dd68c' }} />
+                                            )}
                                         </div>
-                                    </div>
-                                ))
+                                    )
+                                })
                             )}
                         </div>
-                        {versions.length > 0 && (
+                        {Array.isArray(versions) && versions.length > 0 && (
                             <div className={styles.modalFooter}>
-                                <p className={styles.hint}>Click on a version to load it</p>
+                                <p className={styles.hint}>
+                                    {loadingVersion ? 'Loading version…' : 'Click on a version to load it'}
+                                </p>
                             </div>
                         )}
                     </div>

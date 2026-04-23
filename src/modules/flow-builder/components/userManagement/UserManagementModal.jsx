@@ -3,24 +3,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './UserManagementModal.module.css';
 
 // ─── Mock data — remove this block and uncomment the import below when API is ready
-// import { getUsersApi, updateUserApi, deleteUserApi, createUserApi } from '@/modules/flow-builder/services/userService';
+import { getUsersApi, updateUserApi, deleteUserApi, createUserApi } from '@/modules/flow-builder/services/userService';
 
-const MOCK_USERS = [
-    { id: 1, username: 'alice_admin', role: 'admin', is_active: true, created_at: '2026-04-22T16:02:21.037643', updated_at: '2026-04-22T16:02:21.037643' },
-    { id: 2, username: 'bob_user', role: 'user', is_active: true, created_at: '2026-04-20T10:30:00.000000', updated_at: '2026-04-21T14:15:00.000000' },
-    { id: 3, username: 'carol_user', role: 'user', is_active: false, created_at: '2026-04-18T09:15:00.000000', updated_at: '2026-04-19T11:00:00.000000' },
-    { id: 4, username: 'david_user', role: 'user', is_active: true, created_at: '2026-04-15T11:45:00.000000', updated_at: '2026-04-15T11:45:00.000000' },
-    { id: 5, username: 'eva_admin', role: 'admin', is_active: false, created_at: '2026-04-10T14:00:00.000000', updated_at: '2026-04-22T08:30:00.000000' },
-];
+// const MOCK_USERS = [
+//     { id: 1, username: 'alice_admin', role: 'admin', is_active: true, created_at: '2026-04-22T16:02:21.037643', updated_at: '2026-04-22T16:02:21.037643' },
+//     { id: 2, username: 'bob_user', role: 'user', is_active: true, created_at: '2026-04-20T10:30:00.000000', updated_at: '2026-04-21T14:15:00.000000' },
+//     { id: 3, username: 'carol_user', role: 'user', is_active: false, created_at: '2026-04-18T09:15:00.000000', updated_at: '2026-04-19T11:00:00.000000' },
+//     { id: 4, username: 'david_user', role: 'user', is_active: true, created_at: '2026-04-15T11:45:00.000000', updated_at: '2026-04-15T11:45:00.000000' },
+//     { id: 5, username: 'eva_admin', role: 'admin', is_active: false, created_at: '2026-04-10T14:00:00.000000', updated_at: '2026-04-22T08:30:00.000000' },
+// ];
 
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
-const getUsersApi = async () => { await delay(600); return { data: [...MOCK_USERS] }; };
-const updateUserApi = async (id, payload) => { await delay(500); return { data: { id, ...payload } }; };
-const deleteUserApi = async (id) => { await delay(400); return {}; };
-const createUserApi = async (payload) => {
-    await delay(600);
-    return { data: { id: Date.now(), ...payload, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
-};
+// const delay = (ms) => new Promise(res => setTimeout(res, ms));
+// const getUsersApi = async () => { await delay(600); return { data: [...MOCK_USERS] }; };
+// const updateUserApi = async (id, payload) => { await delay(500); return { data: { id, ...payload } }; };
+// const deleteUserApi = async (id) => { await delay(400); return {}; };
+// const createUserApi = async (payload) => {
+//     await delay(600);
+//     return { data: { id: Date.now(), ...payload, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } };
+// };
 // ─────────────────────────────────────────────────────────────────────────────
 
 const formatDate = (dateStr) => {
@@ -53,6 +53,7 @@ const UserManagementModal = ({ onClose }) => {
     const bannerTimerRef = useRef(null);
 
     const overlayRef = useRef();
+    const bodyRef = useRef();
 
     const showBanner = useCallback((type, message) => {
         if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
@@ -146,11 +147,17 @@ const UserManagementModal = ({ onClose }) => {
                 password: form.password,
                 role: form.role,
             });
-            setUsers(prev => [...prev, res.data]);
+            const addedUsername = form.username.trim();
             setForm(EMPTY_FORM);
             setShowForm(false);
             setShowPwd(false);
-            showBanner('success', `"${res.data.username}" added successfully.`);
+            showBanner('success', `"${addedUsername}" added successfully.`);
+            await fetchUsers();
+            setTimeout(() => {
+                if (bodyRef.current) {
+                    bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+                }
+            }, 50);
         } catch (err) {
             setFormError(err?.response?.data?.error || 'Failed to create user.');
         } finally {
@@ -208,7 +215,17 @@ const UserManagementModal = ({ onClose }) => {
                 {showForm && (
                     <div className={styles.addForm}>
                         <div className={styles.addFormCard}>
-                            <p className={styles.addFormTitle}>New User</p>
+                            <div className={styles.addFormTitleRow}>
+                                <p className={styles.addFormTitle}>New User</p>
+                                <button
+                                    className={styles.addFormCloseBtn}
+                                    onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setFormError(''); setShowPwd(false); }}
+                                    title="Close"
+                                    disabled={adding}
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
                             <div className={styles.addFormFields}>
                                 <div className={styles.addFormField}>
                                     <label className={styles.addFormLabel}>Username</label>
@@ -268,7 +285,7 @@ const UserManagementModal = ({ onClose }) => {
                 )}
 
                 {/* Body */}
-                <div className={styles.body}>
+                <div className={styles.body} ref={bodyRef}>
                     {loading && (
                         <div className={styles.centerState}>
                             <Loader2 size={22} className={styles.spin} />

@@ -25,8 +25,15 @@
 }
 
 @keyframes modalIn {
-    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* ── Header ── */
@@ -130,8 +137,15 @@
 }
 
 @keyframes bannerIn {
-    from { opacity: 0; transform: scale(0.88); }
-    to   { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.88);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .headerBannerSuccess {
@@ -182,7 +196,7 @@
     width: 30px;
     height: 30px;
     border: none;
-    background: rgba(255,255,255,0.06);
+    background: rgba(255, 255, 255, 0.06);
     color: #64748b;
     border-radius: 8px;
     cursor: pointer;
@@ -190,7 +204,7 @@
 }
 
 .closeBtn:hover {
-    background: rgba(255,255,255,0.12);
+    background: rgba(255, 255, 255, 0.12);
     color: #cbd5e1;
 }
 
@@ -204,8 +218,15 @@
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .addFormCard {
@@ -213,7 +234,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     padding: 14px 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .addFormTitle {
@@ -222,7 +243,40 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #94a3b8;
-    margin: 0 0 10px;
+    margin: 0;
+}
+
+.addFormTitleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.addFormCloseBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: #f1f5f9;
+    color: #94a3b8;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.addFormCloseBtn:hover:not(:disabled) {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.addFormCloseBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .addFormFields {
@@ -264,7 +318,10 @@
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.addInput:disabled { opacity: 0.5; background: #f8fafc; }
+.addInput:disabled {
+    opacity: 0.5;
+    background: #f8fafc;
+}
 
 .pwdWrap {
     position: relative;
@@ -274,7 +331,10 @@
     width: 100%;
 }
 
-.pwdWrap .addInput { padding-right: 34px; width: 100%; }
+.pwdWrap .addInput {
+    padding-right: 34px;
+    width: 100%;
+}
 
 .pwdToggle {
     position: absolute;
@@ -289,7 +349,9 @@
     transition: color 0.15s;
 }
 
-.pwdToggle:hover { color: #475569; }
+.pwdToggle:hover {
+    color: #475569;
+}
 
 .addSelect {
     height: 36px;
@@ -342,7 +404,9 @@
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
-.addSubmitBtn:active:not(:disabled) { transform: translateY(0); }
+.addSubmitBtn:active:not(:disabled) {
+    transform: translateY(0);
+}
 
 .addSubmitBtn:disabled {
     opacity: 0.5;
@@ -378,9 +442,18 @@
     color: #64748b;
 }
 
-.errorIcon  { color: #ef4444; }
-.errorText  { color: #ef4444; font-size: 13px; }
-.emptyText  { color: #94a3b8; }
+.errorIcon {
+    color: #ef4444;
+}
+
+.errorText {
+    color: #ef4444;
+    font-size: 13px;
+}
+
+.emptyText {
+    color: #94a3b8;
+}
 
 .retryBtn {
     margin-top: 4px;
@@ -392,9 +465,14 @@
     color: #334155;
     cursor: pointer;
     transition: background 0.15s;
+    width: auto !important;
+    align-self: center;
 }
 
-.retryBtn:hover { background: #f8fafc; }
+.retryBtn:hover {
+    border-color: #3dd68c;
+    color: #3dd68c;
+}
 
 /* ── Table ── */
 .table {
@@ -430,20 +508,51 @@
     text-align: center;
 }
 
-.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
 
-.colSerial   { width: 44px; }
-.colName     { width: 170px; text-align: center; }
-.colRole     { width: 120px; }
-.colStatus   { width: 140px; }
-.colModified { width: 150px; }
-.colSave     { width: 85px; }
-.colDelete   { width: 56px; }
+.colSerial {
+    width: 44px;
+}
+
+.colName {
+    width: 170px;
+    text-align: center;
+}
+
+.colRole {
+    width: 120px;
+}
+
+.colStatus {
+    width: 140px;
+}
+
+.colModified {
+    width: 150px;
+}
+
+.colSave {
+    width: 85px;
+}
+
+.colDelete {
+    width: 56px;
+}
 
 /* Row */
-.row { transition: background 0.1s; }
-.row:hover { background: #fafbff; }
-.rowDirty td:first-child { box-shadow: inset 3px 0 0 #6366f1; }
+.row {
+    transition: background 0.1s;
+}
+
+.row:hover {
+    background: #fafbff;
+}
+
+.rowDirty td:first-child {
+    box-shadow: inset 3px 0 0 #6366f1;
+}
 
 /* Serial */
 .serialCell {
@@ -454,7 +563,9 @@
 }
 
 /* Name */
-.nameCell { text-align: center; }
+.nameCell {
+    text-align: center;
+}
 
 .userName {
     font-weight: 600;
@@ -489,10 +600,15 @@
     background-color: #fff;
 }
 
-.roleSelect:disabled { opacity: 0.5; cursor: not-allowed; }
+.roleSelect:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 /* Toggle */
-.toggleCell { padding: 10px 8px; }
+.toggleCell {
+    padding: 10px 8px;
+}
 
 .toggleInner {
     display: flex;
@@ -509,7 +625,9 @@
     flex-shrink: 0;
 }
 
-.toggleInput { display: none; }
+.toggleInput {
+    display: none;
+}
 
 .toggleTrack {
     position: relative;
@@ -521,7 +639,9 @@
     transition: background 0.2s;
 }
 
-.toggleInput:checked ~ .toggleTrack { background: #22c55e; }
+.toggleInput:checked~.toggleTrack {
+    background: #22c55e;
+}
 
 .toggleThumb {
     position: absolute;
@@ -535,8 +655,14 @@
     transition: transform 0.2s;
 }
 
-.toggleInput:checked ~ .toggleTrack .toggleThumb { transform: translateX(16px); }
-.toggleInput:disabled ~ .toggleTrack { opacity: 0.5; cursor: not-allowed; }
+.toggleInput:checked~.toggleTrack .toggleThumb {
+    transform: translateX(16px);
+}
+
+.toggleInput:disabled~.toggleTrack {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 .toggleLabel {
     font-size: 12px;
@@ -546,8 +672,13 @@
     flex-shrink: 0;
 }
 
-.labelActive   { color: #16a34a; }
-.labelInactive { color: #94a3b8; }
+.labelActive {
+    color: #16a34a;
+}
+
+.labelInactive {
+    color: #94a3b8;
+}
 
 /* Modified */
 .modifiedCell {
@@ -622,11 +753,21 @@
     transform: translateY(-1px);
 }
 
-.deleteBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.deleteBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
 
 /* Spinner */
-.spin { animation: spin 0.65s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.spin {
+    animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 /* Footer */
 .footer {
