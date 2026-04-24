@@ -47,6 +47,8 @@ const LeftSidebar = () => {
     const canUndo = useSelector((state) => state.flow.history.length > 0)
     const canRedo = useSelector((state) => state.flow.future.length > 0)
 
+    console.log(user)
+
     const isAdmin = user?.role === 'admin'
 
     const isOverlapping = (pos, nodes, width, height) => {
@@ -93,7 +95,7 @@ const LeftSidebar = () => {
         if (!versionName?.trim()) return
         setLoadingSave(true)
         try {
-            await saveVersionApi(versionName, flow.nodes, flow.edges)
+            await saveVersionApi(versionName, user?.name, flow.nodes, flow.edges)
             alert(`✅ Version "${versionName}" saved successfully`)
         } catch (error) {
             console.error(error)
@@ -148,9 +150,12 @@ const LeftSidebar = () => {
     }
 
     const handlePublish = async () => {
+        if (!window.confirm('⚠️ Do you want to publish this flow? This will overwrite the current production flow.')) {
+            return
+        }
         setLoadingPublish(true)
         try {
-            const response = await publishApi(nodes, edges)
+            const response = await publishApi(user?.name, nodes, edges)
             alert(response.data.message)
         } catch (error) {
             console.error(error)

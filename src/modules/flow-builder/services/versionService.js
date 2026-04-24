@@ -7,10 +7,11 @@ const api = axios.create({
 });
 
 // Save Version
-export const saveVersionApi = async (versionName, nodes, edges) => {
+export const saveVersionApi = async (versionName, name, nodes, edges) => {
     const formattedData = formatForBackend(nodes, edges);
 
     return api.post("/save-version", {
+        username: name,
         version: versionName,
         data: formattedData,
     });
@@ -30,10 +31,11 @@ export const loadVersionApi = async (versionName) => {
 };
 
 // Publish Flow
-export const publishApi = async (nodes, edges) => {
+export const publishApi = async (name, nodes, edges) => {
     const formattedData = formatForBackend(nodes, edges);
 
     return api.post("/publish", {
+        username: name,
         data: formattedData
     });
 };
